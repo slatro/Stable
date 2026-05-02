@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
-    "deploy": "hardhat run scripts/deploy.ts --network arcTestnet"
+    "deploy": "hardhat run scripts/deploy.ts --network arcTestnet",
+    "build": "cd frontend && npm install && npm run build"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
