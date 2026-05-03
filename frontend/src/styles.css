@@ -92,25 +92,44 @@ body {
   to { transform: translate(40px, 40px); }
 }
 
-/* ULTIMATE FROSTED GLASS - Optimized for PC and Mobile */
+/* ULTIMATE FROSTED GLASS - Optimized with Webkit Compatibility for Mobile */
 .premium-card {
-  @apply backdrop-blur-[80px] md:backdrop-blur-[120px] rounded-[32px] border border-white/[0.12] transition-all duration-700 relative overflow-hidden;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(20, 20, 25, 0.4) 100%);
+  @apply rounded-[32px] border border-white/[0.12] transition-all duration-700 relative overflow-hidden;
+  
+  /* Standard & Webkit Blur */
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  
+  /* Layered background for 'Frosty' look */
+  background: linear-gradient(
+    135deg, 
+    rgba(255, 255, 255, 0.06) 0%, 
+    rgba(20, 20, 25, 0.45) 100%
+  );
+  
   box-shadow: 
     0 40px 100px -20px rgba(0, 0, 0, 0.8),
-    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+/* Higher contrast blur for Desktop */
+@media (min-width: 1280px) {
+  .premium-card {
+    backdrop-filter: blur(120px);
+    -webkit-backdrop-filter: blur(120px);
+  }
 }
 
 .premium-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.08), transparent 70%);
+  background: radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.1), transparent 70%);
   pointer-events: none;
 }
 
 .premium-card:hover, .premium-card:active {
-  @apply border-white/[0.2] bg-white/[0.08];
+  @apply border-white/[0.2] bg-white/[0.1];
   transform: translateY(-2px);
   box-shadow: 
     0 50px 120px -20px rgba(0, 0, 0, 0.9),
@@ -118,9 +137,18 @@ body {
 }
 
 .glass-frame {
-  @apply backdrop-blur-[60px] md:backdrop-blur-[100px] rounded-[32px] border border-white/[0.15] overflow-hidden transition-all duration-700;
-  background: rgba(10, 10, 15, 0.5);
+  @apply rounded-[32px] border border-white/[0.15] overflow-hidden transition-all duration-700;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  background: rgba(10, 10, 15, 0.6);
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+}
+
+@media (min-width: 1280px) {
+  .glass-frame {
+    backdrop-filter: blur(100px);
+    -webkit-backdrop-filter: blur(100px);
+  }
 }
 
 .swap-input {
