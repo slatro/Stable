@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Header } from "./components/Header";
 import { SwapCard } from "./components/SwapCard";
 import { TradingViewChart as PriceChart } from "./components/PriceChart";
