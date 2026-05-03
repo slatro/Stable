@@ -39,7 +39,7 @@ body {
   position: absolute;
   border-radius: 50%;
   filter: blur(140px);
-  opacity: 0.18; /* Increased for better glass refraction */
+  opacity: 0.18;
 }
 
 .orb-1 {
@@ -95,34 +95,12 @@ body {
 }
 
 /* PERFECT GLASSMORPHISM - Based on User Reference */
-.btn-premium {
-  @apply font-black rounded-2xl transition-all duration-500 transform active:scale-95;
-  background: linear-gradient(180deg, #222 0%, #000 100%); 
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 
-    0 10px 30px rgba(0, 0, 0, 0.5),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
-}
-
-.btn-premium:hover {
-  background: linear-gradient(180deg, #333 0%, #050505 100%);
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
-}
-
 .premium-card {
   @apply rounded-[32px] transition-all duration-700 relative overflow-hidden;
-  
-  /* Very thin white border as in reference */
   border: 1px solid rgba(255, 255, 255, 0.125);
-  
-  /* Subtle white tint background */
   background: rgba(255, 255, 255, 0.05);
-  
-  /* The Magic: Backdrop Blur */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  
   box-shadow: 
     0 40px 100px -20px rgba(0, 0, 0, 0.8),
     inset 0 1px 1px rgba(255, 255, 255, 0.1);
@@ -135,12 +113,23 @@ body {
   }
 }
 
-.premium-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent);
-  pointer-events: none;
+/* THE LEGENDARY SWAP BUTTON - Final Revision */
+.btn-premium {
+  @apply font-black rounded-[24px] transition-all duration-500 transform active:scale-95;
+  background: linear-gradient(180deg, #222 0%, #0c0c0e 100%); 
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.btn-premium:hover {
+  background: linear-gradient(180deg, #2a2a2e 0%, #111113 100%);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 15px 40px rgba(0, 0, 0, 0.6),
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.15);
 }
 
 .glass-frame {
@@ -149,13 +138,6 @@ body {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
-}
-
-@media (min-width: 1280px) {
-  .glass-frame {
-    backdrop-filter: blur(35px);
-    -webkit-backdrop-filter: blur(35px);
-  }
 }
 
 /* Ticker Animation */
