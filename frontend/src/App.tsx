@@ -87,7 +87,9 @@ export default function App() {
           
           {/* Left Column: Chart + Bottom Bar */}
           <div className="flex flex-col gap-4">
-            <PriceChart />
+            <div className="glass-frame">
+              <PriceChart />
+            </div>
             <div className="flex items-center gap-4 px-6 py-4 premium-card bg-blue-500/[0.03] h-[52px]">
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
               <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Market Status: Highly Liquid</span>
