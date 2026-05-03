@@ -59,26 +59,25 @@ body {
   animation: float 15s infinite alternate-reverse;
 }
 
-/* Animated Arcs */
+/* Animated Arcs - Snake Effect */
 .bg-arcs {
   position: fixed;
   inset: 0;
   z-index: -2;
   pointer-events: none;
-  opacity: 0.15;
+  opacity: 0.35; /* Increased opacity for visibility */
 }
 
 .arc-line {
-  stroke-dasharray: 1000;
-  stroke-dashoffset: 1000;
-  animation: drawArc 10s linear infinite;
+  stroke-dasharray: 300 1200; /* Snake segment size and gap */
+  stroke-dashoffset: 1500;
+  animation: slitherArc 8s linear infinite;
+  stroke-linecap: round;
 }
 
-@keyframes drawArc {
-  0% { stroke-dashoffset: 1000; opacity: 0; }
-  20% { opacity: 0.5; }
-  80% { opacity: 0.5; }
-  100% { stroke-dashoffset: 0; opacity: 0; }
+@keyframes slitherArc {
+  0% { stroke-dashoffset: 1500; }
+  100% { stroke-dashoffset: 0; }
 }
 
 @keyframes float {

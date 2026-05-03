@@ -76,7 +76,7 @@ export const SwapCard = () => {
 
         <div className="text-center">
           <p className="text-[9px] font-extrabold text-white/10 uppercase tracking-[0.5em]">
-            Powered by Arc Settlement Network
+            Powered by Arc Network
           </p>
         </div>
       </div>
