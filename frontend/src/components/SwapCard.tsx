@@ -20,9 +20,9 @@ export const SwapCard = () => {
       <div className="space-y-2 relative">
         {/* Input From */}
         <div className="p-5 rounded-[28px] bg-white/[0.02] border border-white/[0.05]">
-          <div className="flex justify-between mb-4 px-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/20">
+          <div className="flex justify-between mb-4 px-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/40">
             <span>Pay</span>
-            <span className="text-white/40">Balance: 2,450.00</span>
+            <span className="text-white/80">Balance: 2,450.00</span>
           </div>
           <div className="flex items-center gap-4">
             <input 
@@ -49,9 +49,9 @@ export const SwapCard = () => {
 
         {/* Input To */}
         <div className="p-5 rounded-[28px] bg-white/[0.02] border border-white/[0.05] pt-10">
-          <div className="flex justify-between mb-4 px-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/20">
+          <div className="flex justify-between mb-4 px-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/40">
             <span>Receive</span>
-            <span className="text-white/40">Balance: 1,200.00</span>
+            <span className="text-white/80">Balance: 1,200.00</span>
           </div>
           <div className="flex items-center gap-4">
             <input 
@@ -73,11 +73,11 @@ export const SwapCard = () => {
       {/* Stats Summary */}
       <div className="mt-6 p-5 rounded-[24px] bg-blue-500/[0.02] border border-blue-500/10 space-y-3">
         <div className="flex justify-between items-center text-[11px] font-bold">
-          <span className="text-white/30 uppercase tracking-widest flex items-center gap-2">Rate <Info size={12} /></span>
-          <span className="text-white/80">1 mEURC ≈ 1.084 mUSDC</span>
+          <span className="text-white/50 uppercase tracking-widest flex items-center gap-2">Rate <Info size={12} /></span>
+          <span className="text-white">1 mEURC ≈ 1.084 mUSDC</span>
         </div>
         <div className="flex justify-between items-center text-[11px] font-bold">
-          <span className="text-white/30 uppercase tracking-widest flex items-center gap-2">Slippage <Settings size={12} /></span>
+          <span className="text-white/50 uppercase tracking-widest flex items-center gap-2">Slippage <Settings size={12} /></span>
           <span className="text-blue-400">0.5%</span>
         </div>
       </div>

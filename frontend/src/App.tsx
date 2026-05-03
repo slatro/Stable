@@ -52,13 +52,13 @@ export default function App() {
           <div className="flex-1 max-w-2xl overflow-hidden pointer-events-none">
             <div className="flex items-center gap-12 animate-infinite-scroll whitespace-nowrap">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-4 text-[9px] font-bold uppercase tracking-[0.2em] text-white/20">
-                  <span className="text-blue-500/50">#SWAP</span>
-                  <span>0x71...3912 swapped 1.2k mEURC → 1.3k mUSDC</span>
-                  <span className="text-white/5">•</span>
-                  <span className="text-blue-500/50">#SWAP</span>
-                  <span>0xA4...9281 swapped 500 mUSDC → 462 mEURC</span>
-                  <span className="text-white/5">•</span>
+                <div key={i} className="flex items-center gap-4 text-[9px] font-bold uppercase tracking-[0.2em] text-white/50">
+                  <span className="text-blue-400">#SWAP</span>
+                  <span className="text-white/80">0x71...3912 swapped 1.2k mEURC → 1.3k mUSDC</span>
+                  <span className="text-white/20">•</span>
+                  <span className="text-blue-400">#SWAP</span>
+                  <span className="text-white/80">0xA4...9281 swapped 500 mUSDC → 462 mEURC</span>
+                  <span className="text-white/20">•</span>
                 </div>
               ))}
             </div>

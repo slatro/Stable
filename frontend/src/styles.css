@@ -7,18 +7,17 @@
   --font-main: 'Plus Jakarta Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Architectural Colors from the provided image */
-  --bg-top: #0a1931;
-  --bg-middle: #183a5a;
-  --bg-bottom: #2a6f8a;
+  /* Architectural Colors - Deep & Vibrant */
+  --bg-top: #081121;
+  --bg-middle: #132f4c;
+  --bg-bottom: #2d6a7f;
   --accent-blue: #3b82f6;
   --accent-cyan: #2dd4bf;
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-secondary: #cbd5e1; /* Brighter slate for better visibility */
 }
 
 body {
-  /* Dynamic Linear Gradient from the image */
   background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-middle) 50%, var(--bg-bottom) 100%);
   background-attachment: fixed;
   color: var(--text-primary);
@@ -36,42 +35,43 @@ body {
   width: 100%;
   height: 100%;
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 100px 100px;
   pointer-events: none;
   z-index: -1;
-  opacity: 0.4;
+  opacity: 0.5;
 }
 
 .premium-card {
-  @apply backdrop-blur-3xl rounded-[28px] border border-white/[0.08] transition-all duration-300;
-  background: rgba(15, 25, 50, 0.35);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  @apply backdrop-blur-3xl rounded-[28px] border border-white/[0.12] transition-all duration-300;
+  background: rgba(3, 7, 18, 0.6); /* Darker, more solid background to stand out */
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(59, 130, 246, 0.05); /* Added outer glow */
 }
 
 .premium-card:hover {
-  @apply border-white/20;
+  @apply border-blue-500/40;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.7), 0 0 50px rgba(59, 130, 246, 0.1);
 }
 
 .swap-input {
-  @apply bg-white/[0.04] border border-white/[0.1] rounded-2xl px-5 py-4 w-full 
-         text-2xl font-bold text-white placeholder-white/10 outline-none transition-all duration-300;
+  @apply bg-white/[0.05] border border-white/[0.1] rounded-2xl px-5 py-4 w-full 
+         text-2xl font-bold text-white placeholder-white/20 outline-none transition-all duration-300;
 }
 
 .swap-input:focus {
-  @apply border-white/30 bg-white/[0.06];
+  @apply border-blue-500/40 bg-white/[0.08];
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
 }
 
 .btn-premium {
   @apply font-bold rounded-2xl transition-all duration-300 transform active:scale-95;
   background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
-  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3);
 }
 
-/* Nav Link Styling */
 .nav-link {
-  @apply text-[13px] font-semibold text-white/50 transition-all duration-200 relative;
+  @apply text-[13px] font-semibold text-slate-300 transition-all duration-200 relative;
 }
 
 .nav-link:hover, .nav-link.active {
