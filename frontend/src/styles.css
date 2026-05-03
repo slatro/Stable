@@ -60,27 +60,28 @@ body {
   animation: float 20s infinite alternate-reverse;
 }
 
-/* Animated Arcs - Increased brightness to be seen through glass */
+/* Animated Arcs - High Visibility for Glassmorphism */
 .bg-arcs {
   position: fixed;
   inset: 0;
-  z-index: -15;
+  z-index: -20; /* Deepest layer */
   pointer-events: none;
-  opacity: 0.8; /* Increased opacity */
+  opacity: 0.9;
 }
 
 .arc-line {
-  stroke-dasharray: 400 1600;
+  stroke-dasharray: 500 1500;
   stroke-dashoffset: 2000;
-  animation: slitherArc 14s linear infinite;
+  animation: slitherArc 12s linear infinite;
   stroke-linecap: round;
-  stroke-width: 0.8px;
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+  stroke-width: 1.2px; /* Thicker for visibility */
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+  stroke: rgba(255, 255, 255, 0.9);
 }
 
 .snake-head {
   fill: white;
-  filter: blur(2px) drop-shadow(0 0 15px rgba(255, 255, 255, 1));
+  filter: blur(2px) drop-shadow(0 0 20px rgba(255, 255, 255, 1));
 }
 
 @keyframes slitherArc {
@@ -93,30 +94,30 @@ body {
   to { transform: translate(60px, 60px); }
 }
 
-/* REAL FROSTED GLASS - High Transparency & Blur */
+/* TRUE FROSTED GLASS - Crystal Clear but Hazy */
 .premium-card {
-  @apply rounded-[32px] border border-white/[0.1] transition-all duration-700 relative overflow-hidden;
+  @apply rounded-[32px] border border-white/[0.15] transition-all duration-700 relative overflow-hidden;
   
-  /* Critical: Low opacity background to see through */
+  /* Very transparent white frosting */
   background: linear-gradient(
     135deg, 
-    rgba(255, 255, 255, 0.03) 0%, 
-    rgba(255, 255, 255, 0.01) 100%
+    rgba(255, 255, 255, 0.08) 0%, 
+    rgba(255, 255, 255, 0.02) 100%
   );
   
-  /* Strong Blur */
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  /* Refined Blur for motion visibility */
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   
   box-shadow: 
     0 40px 100px -20px rgba(0, 0, 0, 0.8),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
 @media (min-width: 1280px) {
   .premium-card {
-    backdrop-filter: blur(60px);
-    -webkit-backdrop-filter: blur(60px);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
   }
 }
 
