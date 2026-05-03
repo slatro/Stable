@@ -2,14 +2,14 @@ import React from 'react';
 
 export const Logo = () => (
   <div className="flex items-center gap-4 group cursor-pointer">
-    {/* The Latest Original Logo Image */}
+    {/* Pure Original Image File (No filters, just blend) */}
     <div className="shrink-0 transition-all duration-500 group-hover:scale-105">
       <img 
-        src="/assets/logo-v3.png" 
+        src="/assets/logo-v4.png" 
         alt="ArcFX Logo"
-        className="w-[48px] h-[48px] object-contain mix-blend-screen brightness-110 contrast-125"
+        className="w-[48px] h-[48px] object-contain mix-blend-screen"
         style={{ 
-          filter: 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.5))'
+          imageRendering: 'auto'
         }}
       />
     </div>
