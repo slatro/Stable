@@ -140,13 +140,22 @@ export default function App() {
 
       <footer className="py-12 px-8 border-t border-white/[0.05] bg-white/[0.01]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-xs font-bold text-white uppercase tracking-widest">ArcFX Protocol</span>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src="/assets/logo-final.png" 
+                alt="ArcFX" 
+                className="w-6 h-6 mix-blend-screen" 
+                style={{ 
+                  filter: 'contrast(1.6) brightness(0.85)',
+                  maskImage: 'radial-gradient(circle, black 60%, transparent 95%)',
+                  WebkitMaskImage: 'radial-gradient(circle, black 60%, transparent 95%)'
+                }}
+              />
+              <span className="text-sm font-black text-white uppercase tracking-tighter">ARCFX</span>
             </div>
-            <p className="text-[10px] text-white/20 font-medium max-w-xs uppercase tracking-wider">
-              Institutional stablecoin settlement.
+            <p className="text-[10px] text-white/30 font-bold max-w-xs uppercase tracking-[0.2em]">
+              Institutional Stablecoin Settlement Network
             </p>
           </div>
           <div className="flex gap-12 text-[10px] font-bold uppercase tracking-widest text-white/20">
