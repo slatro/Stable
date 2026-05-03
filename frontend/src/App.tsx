@@ -8,6 +8,8 @@ import { ActivityTicker } from "./components/ActivityTicker";
 import { Zap, Info, Settings, ShieldCheck } from "lucide-react";
 
 export default function App() {
+  const [slippage, setSlippage] = useState('3.00');
+
   return (
     <div className="min-h-screen flex flex-col selection:bg-white/10 relative">
       {/* Dynamic Background Energy Layer - Snake Paths */}
@@ -92,12 +94,12 @@ export default function App() {
           
           {/* Swap Column (Order-1 on mobile, Order-2 on desktop) */}
           <div className="flex flex-col items-center order-1 xl:order-2">
-            <SwapCard />
+            <SwapCard slippage={slippage} setSlippage={setSlippage} />
             {/* Restored Swap Detail Bar */}
             <div className="w-full mt-4 flex flex-col gap-2 px-6">
               <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-white/30">
                 <span>Slippage Tolerance</span>
-                <span className="text-blue-400">0.5%</span>
+                <span className="text-blue-400">{slippage}%</span>
               </div>
               <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-white/30">
                 <span>Network Fee</span>
