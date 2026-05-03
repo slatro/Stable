@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowDown, Settings, ChevronDown, Wallet, Edit2, RefreshCw } from 'lucide-react';
+import { ArrowDown, ArrowsUpDown, Settings, ChevronDown, Wallet, Edit2, RefreshCw } from 'lucide-react';
 
 export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlippage: (val: string) => void }) => {
   const [fromAmount, setFromAmount] = useState('10');
-  const [toAmount, setToAmount] = useState('10.74');
+  const [toAmount, setToAmount] = useState('11.73');
   const [isEditingSlippage, setIsEditingSlippage] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [rate, setRate] = useState(1.1733); 
   
+  // State for swapping tokens
+  const [isSwapped, setIsSwapped] = useState(false);
+
   const fetchLiveRate = async () => {
     try {
       const response = await fetch('https://api.coinbase.com/v2/prices/EUR-USD/spot');
@@ -31,10 +34,12 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
 
   useEffect(() => {
     if (!isNaN(parseFloat(fromAmount))) {
-      const calculated = parseFloat(fromAmount) * rate;
+      // Calculate based on swap direction
+      const currentRate = isSwapped ? (1 / rate) : rate;
+      const calculated = parseFloat(fromAmount) * currentRate;
       setToAmount(calculated.toFixed(4));
     }
-  }, [fromAmount, rate]);
+  }, [fromAmount, rate, isSwapped]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -42,15 +47,24 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
     setTimeout(() => setIsRefreshing(false), 800);
   };
 
+  const handleSwapTokens = () => {
+    setIsSwapped(!isSwapped);
+    setFromAmount(toAmount);
+    setToAmount(fromAmount);
+  };
+
   const TokenBox = ({ type, amount, setAmount, symbol, name, iconColor, isReadOnly, currentRate }: any) => {
-    // Financial correction: mEURC value in USD should be amount * currentRate
-    const usdValue = symbol === 'mEURC' ? (parseFloat(amount || '0') * currentRate).toFixed(2) : (parseFloat(amount || '0') * 1.0).toFixed(2);
+    // Financial correction: Calculate USD value correctly based on symbol
+    const usdValue = symbol === 'mEURC' ? (parseFloat(amount || '0') * (isSwapped ? (1/currentRate) : currentRate)).toFixed(2) : (parseFloat(amount || '0') * 1.0).toFixed(2);
     
+    // If it's the 'To' box in the current direction, we need to handle the conversion logic for the USD display
+    const finalUsdValue = symbol === 'mEURC' ? (parseFloat(amount || '0') * rate).toFixed(2) : (parseFloat(amount || '0') * 1.0).toFixed(2);
+
     return (
       <div className="flex flex-col gap-1.5 mb-2.5">
         <div className="flex justify-between items-center px-1">
           <div className="flex items-center gap-2 text-[9px] font-bold text-white/30 uppercase tracking-wider">
-            <Wallet size={10} className="text-orange-500/80" />
+            <Wallet size={10} className="text-[#fef3c7]/80" />
             <span>{type}: 0x2EE5...1704</span>
           </div>
           <div className="text-[9px] font-bold text-white/30 flex items-center gap-1">
@@ -80,12 +94,15 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
               readOnly={isReadOnly}
               className={`bg-transparent text-xl font-bold text-white text-right outline-none w-28 placeholder-white/10 ${isReadOnly ? 'opacity-60' : ''}`}
             />
-            <div className="text-[9px] font-medium text-white/10">~{usdValue} USD</div>
+            <div className="text-[9px] font-medium text-white/10">~{finalUsdValue} USD</div>
           </div>
         </div>
       </div>
     );
   };
+
+  const fromToken = isSwapped ? { symbol: 'mUSDC', name: 'Arc Dollar', color: 'bg-emerald-500' } : { symbol: 'mEURC', name: 'Arc Euro', color: 'bg-blue-600' };
+  const toToken = isSwapped ? { symbol: 'mEURC', name: 'Arc Euro', color: 'bg-blue-600' } : { symbol: 'mUSDC', name: 'Arc Dollar', color: 'bg-emerald-500' };
 
   return (
     <div className="flex flex-col gap-3 w-full max-w-[480px]">
@@ -103,29 +120,32 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
       <div className="premium-card p-4 md:p-6 flex flex-col relative">
         <TokenBox 
           type="From" 
-          symbol="mEURC" 
-          name="Arc Euro" 
+          symbol={fromToken.symbol} 
+          name={fromToken.name} 
           amount={fromAmount} 
           setAmount={setFromAmount}
-          iconColor="bg-blue-600"
+          iconColor={fromToken.color}
           isReadOnly={false}
           currentRate={rate}
         />
         
         <div className="relative h-1 flex items-center justify-center my-4 md:my-5">
           <div className="absolute inset-x-0 h-px bg-white/[0.04]" />
-          <button className="z-10 w-7 h-7 rounded-full bg-[#0a0a0c] border border-white/[0.08] flex items-center justify-center text-blue-400 hover:scale-110 transition-transform shadow-lg">
-            <ArrowDown size={11} />
+          <button 
+            onClick={handleSwapTokens}
+            className="z-10 w-8 h-8 rounded-full bg-[#0a0a0c] border border-white/[0.12] flex items-center justify-center text-blue-400 hover:text-blue-300 hover:scale-110 active:scale-95 transition-all shadow-xl group/swap"
+          >
+            <ArrowsUpDown size={13} className="group-hover/swap:rotate-180 transition-transform duration-500" />
           </button>
         </div>
 
         <TokenBox 
           type="To" 
-          symbol="mUSDC" 
-          name="Arc Dollar" 
+          symbol={toToken.symbol} 
+          name={toToken.name} 
           amount={toAmount} 
           setAmount={setToAmount}
-          iconColor="bg-emerald-500"
+          iconColor={toToken.color}
           isReadOnly={true}
           currentRate={rate}
         />
@@ -139,7 +159,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           </span>
           <div 
             onClick={() => setIsEditingSlippage(true)}
-            className="flex items-center gap-2 bg-orange-500/5 border border-orange-500/10 px-2.5 py-1 rounded-xl cursor-pointer hover:bg-orange-500/10 transition-all"
+            className="flex items-center gap-2 bg-[#fef3c7]/5 border border-[#fef3c7]/10 px-2.5 py-1 rounded-xl cursor-pointer hover:bg-[#fef3c7]/10 transition-all"
           >
             {isEditingSlippage ? (
               <input 
@@ -148,12 +168,12 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
                 value={slippage}
                 onChange={(e) => setSlippage(e.target.value)}
                 onBlur={() => setIsEditingSlippage(false)}
-                className="bg-transparent text-[9px] font-black text-orange-500 w-8 outline-none"
+                className="bg-transparent text-[9px] font-black text-[#fef3c7] w-8 outline-none"
               />
             ) : (
-              <span className="text-[9px] font-black text-orange-500">{slippage}%</span>
+              <span className="text-[9px] font-black text-[#fef3c7]">{slippage}%</span>
             )}
-            <Edit2 size={8} className="text-orange-500/60" />
+            <Edit2 size={8} className="text-[#fef3c7]/60" />
           </div>
         </div>
 
@@ -168,7 +188,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           >
             <RefreshCw size={10} className={`text-blue-500/60 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span className={isRefreshing ? 'animate-pulse text-white' : ''}>
-              1 mEURC ≈ {rate.toFixed(4)} mUSDC
+              1 {fromToken.symbol} ≈ {isSwapped ? (1/rate).toFixed(4) : rate.toFixed(4)} {toToken.symbol}
             </span>
           </button>
           <div className="flex items-center gap-1 text-[9px] font-bold text-white/20 uppercase tracking-widest">
