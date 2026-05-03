@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ArrowsUpDown, Settings, ChevronDown, Wallet, Edit2, RefreshCw } from 'lucide-react';
 
 /* 
-  ARCFX TERMINAL - FINAL BUILD SEAL v2.1 
-  - Implementation: Imperial Cream Theme & Functional Dual-Arrow Swap
+  ARCFX TERMINAL - FINAL SEAL v2.2
+  - Implementation: Imperial Cream Theme (#FDF5E6) & Functional Dual-Arrow Swap
+  - Visual: Hard-coded colors to bypass caching, synchronized 518px chart alignment.
 */
 
 export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlippage: (val: string) => void }) => {
@@ -18,11 +19,11 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
     try {
       const response = await fetch('https://api.coinbase.com/v2/prices/EUR-USD/spot');
       const data = await response.json();
-      if (data && data.data && data.data.amount) {
+      if (data?.data?.amount) {
         setRate(parseFloat(data.data.amount));
       }
     } catch (error) {
-      console.error('API Sync Error:', error);
+      console.error('API Error:', error);
     }
   };
 
@@ -53,15 +54,13 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
   };
 
   const TokenBox = ({ type, amount, setAmount, symbol, name, iconColor, isReadOnly }: any) => {
-    // Financial logic for USD display
     const finalUsdValue = symbol === 'mEURC' ? (parseFloat(amount || '0') * rate).toFixed(2) : (parseFloat(amount || '0') * 1.0).toFixed(2);
 
     return (
       <div className="flex flex-col gap-1.5 mb-2.5">
         <div className="flex justify-between items-center px-1">
           <div className="flex items-center gap-2 text-[9px] font-bold text-white/30 uppercase tracking-wider">
-            {/* Wallet icon changed to Cream (#FDF5E6) */}
-            <Wallet size={10} className="text-[#FDF5E6]" />
+            <Wallet size={10} style={{ color: '#FDF5E6' }} />
             <span>{type}: 0x2EE5...1704</span>
           </div>
           <div className="text-[9px] font-bold text-white/30 flex items-center gap-1">
@@ -69,7 +68,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           </div>
         </div>
         
-        <div className="bg-white/10 border border-white/[0.12] backdrop-blur-md rounded-[12px] p-3 md:p-3.5 flex items-center justify-between hover:bg-white/[0.15] transition-all group shadow-inner shadow-white/5">
+        <div className="bg-white/10 border border-white/[0.12] backdrop-blur-md rounded-[12px] p-3 md:p-3.5 flex items-center justify-between hover:bg-white/[0.15] transition-all group">
           <button className="flex items-center gap-3 px-2 py-0.5 rounded-[12px] hover:bg-white/5 transition-all">
             <div className={`w-7 h-7 rounded-full ${iconColor} flex items-center justify-center shadow-lg shadow-black/20`}>
               <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20" />
@@ -117,10 +116,10 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           <div className="absolute inset-x-0 h-px bg-white/[0.04]" />
           <button 
             onClick={handleSwapTokens}
-            className="z-10 w-7 h-7 rounded-full bg-[#0a0a0c] border border-white/[0.12] flex items-center justify-center text-[#FDF5E6] hover:text-white hover:scale-110 active:scale-95 transition-all shadow-xl group/swap"
+            className="z-10 w-7 h-7 rounded-full bg-[#0a0a0c] border border-white/[0.12] flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl group/swap"
+            style={{ color: '#FDF5E6' }}
           >
-            {/* ArrowsUpDown icon explicitly highlighted in Cream */}
-            <ArrowsUpDown size={11} className="group-hover/swap:rotate-180 transition-transform duration-500" />
+            <ArrowsUpDown size={12} className="group-hover/swap:rotate-180 transition-transform duration-500" />
           </button>
         </div>
 
@@ -141,16 +140,17 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
                 value={slippage}
                 onChange={(e) => setSlippage(e.target.value)}
                 onBlur={() => setIsEditingSlippage(false)}
-                className="bg-transparent text-[9px] font-black text-[#FDF5E6] w-8 outline-none"
+                className="bg-transparent text-[9px] font-black w-8 outline-none"
+                style={{ color: '#FDF5E6' }}
               />
             ) : (
-              <span className="text-[9px] font-black text-[#FDF5E6]">{slippage}%</span>
+              <span className="text-[9px] font-black" style={{ color: '#FDF5E6' }}>{slippage}%</span>
             )}
-            <Edit2 size={8} className="text-[#FDF5E6]/60" />
+            <Edit2 size={8} style={{ color: '#FDF5E6', opacity: 0.6 }} />
           </div>
         </div>
 
-        <button className="w-full py-2 md:py-2.5 rounded-[12px] bg-gradient-to-b from-blue-600 to-[#111827] hover:from-blue-500 hover:to-[#1f2937] text-white font-black text-sm md:text-base transition-all shadow-[0_4px_20px_rgba(37,99,235,0.2)] active:scale-95 text-shadow-premium">
+        <button className="w-full py-2 md:py-2.5 rounded-[12px] bg-gradient-to-b from-blue-600 to-[#111827] hover:from-blue-500 hover:to-[#1f2937] text-white font-black text-sm md:text-base transition-all shadow-xl active:scale-95 text-shadow-premium">
           Swap
         </button>
 
