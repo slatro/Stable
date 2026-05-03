@@ -58,7 +58,8 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         </div>
       </div>
       
-      <div className="bg-white/[0.02] border border-white/[0.06] rounded-[12px] p-3.5 md:p-4 flex items-center justify-between hover:bg-white/[0.04] transition-all group">
+      {/* INTERNAL BOXES MADE MORE GLASSY TO MATCH THE PREMIUM FEEL */}
+      <div className="bg-white/[0.03] border border-white/[0.08] backdrop-blur-sm rounded-[12px] p-3.5 md:p-4 flex items-center justify-between hover:bg-white/[0.05] transition-all group">
         <button className="flex items-center gap-3 px-2 py-0.5 rounded-[12px] hover:bg-white/5 transition-all">
           <div className={`w-7 h-7 rounded-full ${iconColor} flex items-center justify-center shadow-lg shadow-black/20`}>
             <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20" />
@@ -88,16 +89,16 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
 
   return (
     <div className="flex flex-col gap-2 w-full max-w-[480px]">
-      {/* LAYER 1: CENTERED WHITE HEADER */}
-      <div className="premium-card p-2.5 md:p-3 flex items-center justify-center relative">
+      {/* LAYER 1: CENTERED WHITE HEADER - MATCHING BOTTOM CARD STYLE */}
+      <div className="premium-card p-4 md:p-5.5 flex items-center justify-center relative">
         <h1 className="text-[10px] font-black uppercase tracking-[0.6em] text-white pl-2">Swap</h1>
         <button className="absolute right-3 p-1.5 rounded-xl hover:bg-white/[0.05] transition-all text-white/20 hover:text-white">
           <Settings size={16} />
         </button>
       </div>
 
-      {/* LAYER 2: MAIN ASSET CARD - INCREASED VERTICAL SPACING */}
-      <div className="premium-card p-6 md:p-8 flex flex-col relative">
+      {/* LAYER 2: MAIN ASSET CARD - MATCHING BOTTOM CARD STYLE & SPACING */}
+      <div className="premium-card p-4 md:p-5.5 flex flex-col relative">
         <TokenBox 
           type="From" 
           symbol="mEURC" 
@@ -126,7 +127,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         />
       </div>
 
-      {/* LAYER 3: COMPACT GRADIENT ACTION CARD - SLIGHTLY EXTENDED FOR ALIGNMENT */}
+      {/* LAYER 3: COMPACT GRADIENT ACTION CARD - THE REFERENCE STYLE */}
       <div className="premium-card p-4 md:p-5.5 flex flex-col gap-3">
         <div className="flex justify-between items-center px-1">
           <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] border-b border-dashed border-white/5 pb-0.5">
