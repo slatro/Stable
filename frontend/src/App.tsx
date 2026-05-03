@@ -95,59 +95,37 @@ export default function App() {
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col items-center relative py-8 px-6">
-        {/* Professional 2-Column Layout - STRETCHED for Symmetry */}
-        <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-8 items-stretch">
+      <main className="flex-1 flex flex-col items-center relative py-4 md:py-8 px-4 md:px-6">
+        {/* Professional 2-Column Layout - REORDERED FOR MOBILE (SWAP FIRST) */}
+        <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-6 md:gap-8 items-stretch">
           
-          {/* Left Column: Chart + Bottom Bar */}
-          <div className="flex flex-col gap-4">
-            <div className="glass-frame">
+          {/* Swap Column (Order-1 on mobile, Order-2 on desktop) */}
+          <div className="flex flex-col items-center order-1 xl:order-2">
+            <SwapCard />
+          </div>
+
+          {/* Chart Column (Order-2 on mobile, Order-1 on desktop) */}
+          <div className="flex flex-col gap-4 order-2 xl:order-1">
+            <div className="glass-frame h-full min-h-[400px]">
               <PriceChart />
             </div>
-            <div className="flex items-center gap-4 px-6 py-4 premium-card bg-blue-500/[0.03] h-[52px]">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-              <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Market Status: Highly Liquid</span>
-              <div className="flex-1" />
-              <div className="flex gap-6">
-                 <span className="text-[10px] font-mono text-white/30 tracking-tight uppercase">Vol (24h): $12.4m</span>
-                 <span className="text-[10px] font-mono text-white/30 tracking-tight uppercase">Slippage: 0.02%</span>
-              </div>
-            </div>
           </div>
-
-          {/* Right Column: Swap + Bottom Bar (Compact & Aligned) */}
-          <div className="flex flex-col gap-4 items-center xl:items-start">
-            <SwapCard />
-            <div className="flex items-center w-full max-w-[440px] premium-card bg-blue-500/[0.03] h-[52px] divide-x divide-white/10">
-              <div className="flex-1 flex flex-col items-center justify-center gap-0.5">
-                <span className="text-[7px] font-extrabold text-white/20 uppercase tracking-[0.2em]">Slippage</span>
-                <span className="text-[10px] font-bold text-blue-400">0.5%</span>
-              </div>
-              <div className="flex-1 flex flex-col items-center justify-center gap-0.5">
-                <span className="text-[7px] font-extrabold text-white/20 uppercase tracking-[0.2em]">Fee</span>
-                <span className="text-[10px] font-bold text-white/70">0.03%</span>
-              </div>
-              <div className="flex-1 flex flex-col items-center justify-center gap-0.5">
-                <span className="text-[7px] font-extrabold text-white/20 uppercase tracking-[0.2em]">Stability</span>
-                <span className="text-[10px] font-bold text-emerald-500/80">99.9%</span>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        {/* Transaction History Section */}
-        <div className="w-full max-w-[1600px] mt-12">
-          <div className="flex items-center justify-between mb-6 px-4">
+        {/* Transaction History Section - COMPRESSED & NO SCROLL */}
+        <div className="w-full max-w-[1600px] mt-8 md:mt-12 overflow-hidden">
+          <div className="flex items-center justify-between mb-4 px-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-bold tracking-tight">Ecosystem Activity</h2>
+              <h2 className="text-sm md:text-lg font-bold tracking-tight">Ecosystem Activity</h2>
             </div>
-            <div className="h-px flex-1 bg-white/[0.05] mx-8" />
-            <button className="text-[10px] font-bold text-blue-400 hover:text-white transition-colors uppercase tracking-widest">
+            <div className="h-px flex-1 bg-white/[0.05] mx-4 md:mx-8" />
+            <button className="text-[9px] md:text-[10px] font-bold text-blue-400 hover:text-white transition-colors uppercase tracking-widest">
               Scan Explorer
             </button>
           </div>
-          <TransactionPanel />
+          <div className="no-scrollbar overflow-hidden">
+            <TransactionPanel />
+          </div>
         </div>
       </main>
 
