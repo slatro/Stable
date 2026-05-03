@@ -136,16 +136,15 @@ export default function App() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <img 
-                src="/assets/logo-final.png" 
-                alt="ArcFX" 
-                className="w-6 h-6 mix-blend-screen" 
+                src="/assets/arcfx-logo-metallic.png" 
+                alt="ARCFX" 
+                className="h-10 w-auto mix-blend-screen" 
                 style={{ 
-                  filter: 'contrast(1.6) brightness(0.85)',
-                  maskImage: 'radial-gradient(circle, black 60%, transparent 95%)',
-                  WebkitMaskImage: 'radial-gradient(circle, black 60%, transparent 95%)'
+                  filter: 'contrast(1.2) brightness(1.1)',
+                  maskImage: 'radial-gradient(circle, black 80%, transparent 100%)',
+                  WebkitMaskImage: 'radial-gradient(circle, black 80%, transparent 100%)'
                 }}
               />
-              <span className="text-sm font-black text-white uppercase tracking-tighter">ARCFX</span>
             </div>
             <p className="text-[10px] text-white/30 font-bold max-w-xs uppercase tracking-[0.2em]">
               Institutional Stablecoin Settlement Network
