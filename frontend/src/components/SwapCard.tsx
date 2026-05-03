@@ -1,6 +1,51 @@
 import React, { useState } from 'react';
 import { ArrowUpDown, Settings, ChevronDown } from 'lucide-react';
 
+const AssetSection = ({ 
+  type, 
+  amount, 
+  setAmount, 
+  isFlipped 
+}: { 
+  type: 'from' | 'to', 
+  amount: string, 
+  setAmount: (val: string) => void,
+  isFlipped: boolean
+}) => {
+  const isFrom = type === 'from';
+  const currentIsFlipped = isFrom ? isFlipped : !isFlipped;
+  
+  return (
+    <div className="flex-1 min-h-[130px] md:min-h-[150px] p-5 md:p-6 rounded-[28px] bg-white/[0.03] border border-white/[0.1] backdrop-blur-[20px] flex flex-col justify-center transition-all hover:bg-white/[0.05] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+      <div className="flex justify-between mb-4 px-1 text-[9px] md:text-[10px] font-extrabold uppercase tracking-[0.35em] text-white/30">
+        <span>{type}</span>
+        <span className="text-white/50">Balance: {currentIsFlipped ? '1,200.00' : '2,450.00'}</span>
+      </div>
+      <div className="flex items-center gap-4">
+        {/* Lightened, More Glassy Input Box */}
+        <div className="flex-1 bg-white/[0.04] border border-white/[0.1] rounded-2xl px-4 py-2.5 shadow-[inset_0_1px_4px_rgba(255,255,255,0.05)]">
+          <input 
+            type="number" 
+            placeholder="0.0" 
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            readOnly={type === 'to'}
+            className={`w-full bg-transparent text-2xl md:text-3xl font-bold text-white placeholder-white/10 outline-none ${type === 'to' ? 'opacity-70' : ''}`}
+          />
+        </div>
+
+        <button className="flex items-center gap-2 md:gap-3 px-3.5 md:px-5 py-3 md:py-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-white hover:bg-blue-500/20 transition-all shrink-0 shadow-lg">
+          <div className={`w-6 md:w-7 h-6 md:h-7 rounded-full flex items-center justify-center text-[10px] md:text-[12px] font-bold shadow-xl ${currentIsFlipped ? 'bg-emerald-500' : 'bg-blue-600'}`}>
+            {currentIsFlipped ? '$' : '€'}
+          </div>
+          <span className="font-bold text-xs md:text-sm tracking-tight">{currentIsFlipped ? 'mUSDC' : 'mEURC'}</span>
+          <ChevronDown size={14} className="text-white/40" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export const SwapCard = () => {
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
@@ -8,41 +53,10 @@ export const SwapCard = () => {
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
-  };
-
-  const AssetSection = ({ type }: { type: 'from' | 'to' }) => {
-    const isFrom = type === 'from';
-    const currentIsFlipped = isFrom ? isFlipped : !isFlipped;
-    
-    return (
-      <div className="flex-1 min-h-[130px] md:min-h-[150px] p-5 md:p-6 rounded-[28px] bg-white/[0.03] border border-white/[0.1] backdrop-blur-[20px] flex flex-col justify-center transition-all hover:bg-white/[0.05] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
-        <div className="flex justify-between mb-4 px-1 text-[9px] md:text-[10px] font-extrabold uppercase tracking-[0.35em] text-white/30">
-          <span>{type}</span>
-          <span className="text-white/50">Balance: {currentIsFlipped ? '1,200.00' : '2,450.00'}</span>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Lightened, More Glassy Input Box */}
-          <div className="flex-1 bg-white/[0.04] border border-white/[0.1] rounded-2xl px-4 py-2.5 shadow-[inset_0_1px_4px_rgba(255,255,255,0.05)]">
-            <input 
-              type="number" 
-              placeholder="0.0" 
-              value={currentIsFlipped ? toAmount : fromAmount}
-              onChange={(e) => currentIsFlipped ? setToAmount(e.target.value) : setFromAmount(e.target.value)}
-              readOnly={!currentIsFlipped && type === 'to'}
-              className={`w-full bg-transparent text-2xl md:text-3xl font-bold text-white placeholder-white/10 outline-none ${!currentIsFlipped && type === 'to' ? 'opacity-70' : ''}`}
-            />
-          </div>
-
-          <button className="flex items-center gap-2 md:gap-3 px-3.5 md:px-5 py-3 md:py-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-white hover:bg-blue-500/20 transition-all shrink-0 shadow-lg">
-            <div className={`w-6 md:w-7 h-6 md:h-7 rounded-full flex items-center justify-center text-[10px] md:text-[12px] font-bold shadow-xl ${currentIsFlipped ? 'bg-emerald-500' : 'bg-blue-600'}`}>
-              {currentIsFlipped ? '$' : '€'}
-            </div>
-            <span className="font-bold text-xs md:text-sm tracking-tight">{currentIsFlipped ? 'mUSDC' : 'mEURC'}</span>
-            <ChevronDown size={14} className="text-white/40" />
-          </button>
-        </div>
-      </div>
-    );
+    // Swap amounts too when flipped
+    const temp = fromAmount;
+    setFromAmount(toAmount);
+    setToAmount(temp);
   };
 
   return (
@@ -57,7 +71,12 @@ export const SwapCard = () => {
       </div>
 
       <div className="flex-1 flex flex-col gap-2 md:gap-3 relative">
-        <AssetSection type="from" />
+        <AssetSection 
+          type="from" 
+          amount={fromAmount} 
+          setAmount={setFromAmount} 
+          isFlipped={isFlipped} 
+        />
         
         {/* Flip Button - Perfectly Centered */}
         <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-10">
@@ -69,7 +88,12 @@ export const SwapCard = () => {
           </button>
         </div>
 
-        <AssetSection type="to" />
+        <AssetSection 
+          type="to" 
+          amount={toAmount} 
+          setAmount={setToAmount} 
+          isFlipped={isFlipped} 
+        />
       </div>
 
       <div className="mt-6 md:mt-8 flex flex-col gap-4">
