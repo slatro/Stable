@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowDown, Settings, Info, ChevronDown, Zap } from 'lucide-react';
+import { ArrowDown, Settings, Info, ChevronDown } from 'lucide-react';
 
 export const SwapCard = () => {
   const [fromAmount, setFromAmount] = useState('');
@@ -82,10 +82,11 @@ export const SwapCard = () => {
         </div>
       </div>
 
-      <button className="btn-premium w-full flex items-center justify-center gap-2 group">
-        <Zap size={18} fill="white" className="group-hover:scale-110 transition-transform" />
-        Swap Assets
-      </button>
+      <div className="mt-8 flex justify-center">
+        <button className="btn-premium px-8 py-3 text-[10px] uppercase tracking-[0.2em]">
+          SWAP
+        </button>
+      </div>
 
       <div className="text-center">
         <p className="text-[10px] font-bold text-white/10 uppercase tracking-[0.2em]">
