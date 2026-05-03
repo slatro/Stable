@@ -151,7 +151,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           </div>
         </div>
 
-        <button className="w-full py-2.5 md:py-3 rounded-[12px] bg-gradient-to-b from-blue-600 to-[#111827] hover:from-blue-500 hover:to-[#1f2937] text-white font-bold text-sm md:text-base transition-all shadow-[0_4px_20px_rgba(37,99,235,0.2)] active:scale-95 border border-white/10">
+        <button className="w-full py-2.5 md:py-3 rounded-[12px] bg-gradient-to-b from-blue-600 to-[#111827] hover:from-blue-500 hover:to-[#1f2937] text-white font-bold text-sm md:text-base transition-all shadow-[0_4px_20px_rgba(37,99,235,0.2)] active:scale-95">
           Swap
         </button>
 
