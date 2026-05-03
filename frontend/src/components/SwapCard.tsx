@@ -133,9 +133,9 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           <div className="absolute inset-x-0 h-px bg-white/[0.04]" />
           <button 
             onClick={handleSwapTokens}
-            className="z-10 w-8 h-8 rounded-full bg-[#0a0a0c] border border-white/[0.12] flex items-center justify-center text-blue-400 hover:text-blue-300 hover:scale-110 active:scale-95 transition-all shadow-xl group/swap"
+            className="z-10 w-7 h-7 rounded-full bg-[#0a0a0c] border border-white/[0.12] flex items-center justify-center text-blue-400 hover:text-blue-300 hover:scale-110 active:scale-95 transition-all shadow-xl group/swap"
           >
-            <ArrowsUpDown size={13} className="group-hover/swap:rotate-180 transition-transform duration-500" />
+            <ArrowsUpDown size={11} className="group-hover/swap:rotate-180 transition-transform duration-500" />
           </button>
         </div>
 
