@@ -43,7 +43,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
   };
 
   const TokenBox = ({ type, amount, setAmount, symbol, name, iconColor, isReadOnly }: any) => (
-    <div className="flex flex-col gap-1.5 mb-3">
+    <div className="flex flex-col gap-1.5 mb-2.5">
       <div className="flex justify-between items-center px-1">
         <div className="flex items-center gap-2 text-[9px] font-bold text-white/30 uppercase tracking-wider">
           <Wallet size={10} className="text-orange-500/80" />
@@ -54,7 +54,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         </div>
       </div>
       
-      <div className="bg-white/10 border border-white/[0.12] backdrop-blur-md rounded-[12px] p-3.5 md:p-4 flex items-center justify-between hover:bg-white/[0.15] transition-all group shadow-inner shadow-white/5">
+      <div className="bg-white/10 border border-white/[0.12] backdrop-blur-md rounded-[12px] p-3 md:p-3.5 flex items-center justify-between hover:bg-white/[0.15] transition-all group shadow-inner shadow-white/5">
         <button className="flex items-center gap-3 px-2 py-0.5 rounded-[12px] hover:bg-white/5 transition-all">
           <div className={`w-7 h-7 rounded-full ${iconColor} flex items-center justify-center shadow-lg shadow-black/20`}>
             <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20" />
@@ -85,7 +85,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
   return (
     <div className="flex flex-col gap-2 w-full max-w-[480px]">
       {/* LAYER 1: CENTERED SWAP TITLE */}
-      <div className="premium-card p-4 md:p-5 flex items-center justify-center relative">
+      <div className="premium-card p-3.5 md:p-4.5 flex items-center justify-center relative">
         <h1 className="text-base md:text-lg font-black uppercase tracking-[0.4em] text-white pl-2 text-shadow-premium">
           Swap
         </h1>
@@ -94,8 +94,8 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         </button>
       </div>
 
-      {/* LAYER 2: MAIN ASSET CARD - REFINED HEIGHT FOR PERFECT ALIGNMENT */}
-      <div className="premium-card p-5 md:p-7 flex flex-col relative">
+      {/* LAYER 2: MAIN ASSET CARD - COMPACTED FOR ALIGNMENT */}
+      <div className="premium-card p-4 md:p-6 flex flex-col relative">
         <TokenBox 
           type="From" 
           symbol="mEURC" 
@@ -106,10 +106,10 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           isReadOnly={false}
         />
         
-        <div className="relative h-2 flex items-center justify-center my-5 md:my-6">
+        <div className="relative h-1 flex items-center justify-center my-4 md:my-5">
           <div className="absolute inset-x-0 h-px bg-white/[0.04]" />
-          <button className="z-10 w-8 h-8 rounded-full bg-[#0a0a0c] border border-white/[0.08] flex items-center justify-center text-blue-400 hover:scale-110 transition-transform shadow-lg">
-            <ArrowDown size={14} />
+          <button className="z-10 w-7 h-7 rounded-full bg-[#0a0a0c] border border-white/[0.08] flex items-center justify-center text-blue-400 hover:scale-110 transition-transform shadow-lg">
+            <ArrowDown size={11} />
           </button>
         </div>
 
@@ -124,8 +124,8 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         />
       </div>
 
-      {/* LAYER 3: ACTION CARD */}
-      <div className="premium-card p-4 md:p-5.5 flex flex-col gap-3">
+      {/* LAYER 3: ACTION CARD - REDUCED HEIGHT FOR PERFECT BASELINE */}
+      <div className="premium-card p-3.5 md:p-4.5 flex flex-col gap-3">
         <div className="flex justify-between items-center px-1">
           <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] border-b border-dashed border-white/5 pb-0.5">
             Slippage Tolerance
@@ -150,7 +150,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           </div>
         </div>
 
-        <button className="w-full py-2.5 md:py-3.5 rounded-[12px] bg-gradient-to-b from-blue-600 to-[#111827] hover:from-blue-500 hover:to-[#1f2937] text-white font-black text-sm md:text-base transition-all shadow-[0_4px_20px_rgba(37,99,235,0.2)] active:scale-95 text-shadow-premium">
+        <button className="w-full py-2 md:py-2.5 rounded-[12px] bg-gradient-to-b from-blue-600 to-[#111827] hover:from-blue-500 hover:to-[#1f2937] text-white font-black text-sm md:text-base transition-all shadow-[0_4px_20px_rgba(37,99,235,0.2)] active:scale-95 text-shadow-premium">
           Swap
         </button>
 

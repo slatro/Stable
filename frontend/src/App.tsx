@@ -111,7 +111,7 @@ export default function App() {
 
           {/* Chart Column (Order-2 on mobile, Order-1 on desktop) */}
           <div className="flex flex-col gap-4 order-2 xl:order-1">
-            <div className="glass-frame h-[535px] xl:h-[535px]">
+            <div className="glass-frame h-[515px] xl:h-[515px]">
               <PriceChart />
             </div>
             {/* Restored Chart Detail Bar */}
