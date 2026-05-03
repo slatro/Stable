@@ -25,7 +25,7 @@ body {
   position: relative;
 }
 
-/* Background Light Orbs based on the reference image */
+/* Background Elements */
 .bg-orbs {
   position: fixed;
   inset: 0;
@@ -38,7 +38,7 @@ body {
   position: absolute;
   border-radius: 50%;
   filter: blur(120px);
-  opacity: 0.15;
+  opacity: 0.12;
 }
 
 .orb-1 {
@@ -59,6 +59,28 @@ body {
   animation: float 15s infinite alternate-reverse;
 }
 
+/* Animated Arcs */
+.bg-arcs {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+.arc-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawArc 10s linear infinite;
+}
+
+@keyframes drawArc {
+  0% { stroke-dashoffset: 1000; opacity: 0; }
+  20% { opacity: 0.5; }
+  80% { opacity: 0.5; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
 @keyframes float {
   from { transform: translate(0, 0); }
   to { transform: translate(50px, 50px); }
@@ -69,7 +91,7 @@ body {
   background: rgba(20, 20, 25, 0.4); 
   box-shadow: 
     0 40px 100px -20px rgba(0, 0, 0, 0.8),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1); /* Frosted top edge reflection */
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
 .premium-card:hover {
@@ -94,7 +116,7 @@ body {
 
 .btn-premium {
   @apply font-black rounded-2xl transition-all duration-500 transform active:scale-95;
-  background: linear-gradient(135deg, #333, #000); /* Dark minimalist button */
+  background: linear-gradient(135deg, #333, #000); 
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }

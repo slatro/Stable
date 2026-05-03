@@ -8,6 +8,15 @@ import { Zap, Info, Settings, ShieldCheck } from "lucide-react";
 export default function App() {
   return (
     <div className="min-h-screen flex flex-col selection:bg-white/10 relative">
+      {/* Dynamic Background Energy Layer */}
+      <div className="bg-arcs">
+        <svg className="w-full h-full" viewBox="0 0 1000 1000" fill="none">
+          <path className="arc-line" d="M -100 800 Q 300 200, 1100 500" stroke="white" strokeWidth="0.5" style={{ animationDelay: '0s' }} />
+          <path className="arc-line" d="M -200 600 Q 400 900, 1200 300" stroke="white" strokeWidth="0.5" style={{ animationDelay: '3s' }} />
+          <path className="arc-line" d="M 500 -100 Q 200 500, 800 1100" stroke="white" strokeWidth="0.5" style={{ animationDelay: '6s' }} />
+        </svg>
+      </div>
+
       {/* Frosted Glass Background Elements */}
       <div className="bg-orbs">
         <div className="orb orb-1" />
