@@ -54,7 +54,8 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         </div>
       </div>
       
-      <div className="bg-black/40 border border-white/[0.08] backdrop-blur-md rounded-[12px] p-3.5 md:p-4 flex items-center justify-between hover:bg-black/60 transition-all group">
+      {/* REVERTED TO GLASSY LOOK - NO MORE BLACK BOXES */}
+      <div className="bg-white/[0.03] border border-white/[0.08] backdrop-blur-md rounded-[12px] p-3.5 md:p-4 flex items-center justify-between hover:bg-white/[0.06] transition-all group">
         <button className="flex items-center gap-3 px-2 py-0.5 rounded-[12px] hover:bg-white/5 transition-all">
           <div className={`w-7 h-7 rounded-full ${iconColor} flex items-center justify-center shadow-lg shadow-black/20`}>
             <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20" />
@@ -84,9 +85,9 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
 
   return (
     <div className="flex flex-col gap-2 w-full max-w-[480px]">
-      {/* LAYER 1: CENTERED SWAP TITLE - MATCHING BUTTON STYLE */}
+      {/* LAYER 1: CENTERED SWAP TITLE */}
       <div className="premium-card p-4 md:p-5 flex items-center justify-center relative">
-        <h1 className="text-base md:text-lg font-black uppercase tracking-[0.4em] text-white pl-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+        <h1 className="text-base md:text-lg font-black uppercase tracking-[0.4em] text-white pl-2 text-shadow-premium">
           Swap
         </h1>
         <button className="absolute right-4 p-1.5 rounded-xl hover:bg-white/[0.05] transition-all text-white/20 hover:text-white">
@@ -94,8 +95,8 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         </button>
       </div>
 
-      {/* LAYER 2: MAIN ASSET CARD - RESTORED AIRY HEIGHT */}
-      <div className="premium-card p-6 md:p-8 flex flex-col relative">
+      {/* LAYER 2: MAIN ASSET CARD - ADJUSTED HEIGHT FOR PERFECT ALIGNMENT */}
+      <div className="premium-card p-5 md:p-6.5 flex flex-col relative">
         <TokenBox 
           type="From" 
           symbol="mEURC" 
@@ -106,10 +107,10 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           isReadOnly={false}
         />
         
-        <div className="relative h-2 flex items-center justify-center my-6 md:my-8">
+        <div className="relative h-2 flex items-center justify-center my-4 md:my-5">
           <div className="absolute inset-x-0 h-px bg-white/[0.04]" />
-          <button className="z-10 w-8 h-8 rounded-full bg-[#0a0a0c] border border-white/[0.08] flex items-center justify-center text-blue-400 hover:scale-110 transition-transform shadow-lg">
-            <ArrowDown size={14} />
+          <button className="z-10 w-7 h-7 rounded-full bg-[#0a0a0c] border border-white/[0.08] flex items-center justify-center text-blue-400 hover:scale-110 transition-transform shadow-lg">
+            <ArrowDown size={12} />
           </button>
         </div>
 
@@ -124,7 +125,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         />
       </div>
 
-      {/* LAYER 3: COMPACT GRADIENT ACTION CARD */}
+      {/* LAYER 3: ACTION CARD */}
       <div className="premium-card p-4 md:p-5.5 flex flex-col gap-3">
         <div className="flex justify-between items-center px-1">
           <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] border-b border-dashed border-white/5 pb-0.5">
