@@ -33,8 +33,8 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         </div>
       </div>
       
-      <div className="bg-white/[0.02] border border-white/[0.06] rounded-[22px] p-3 md:p-3.5 flex items-center justify-between hover:bg-white/[0.04] transition-all group">
-        <button className="flex items-center gap-3 px-2 py-0.5 rounded-2xl hover:bg-white/5 transition-all">
+      <div className="bg-white/[0.02] border border-white/[0.06] rounded-[12px] p-3 md:p-3.5 flex items-center justify-between hover:bg-white/[0.04] transition-all group">
+        <button className="flex items-center gap-3 px-2 py-0.5 rounded-[12px] hover:bg-white/5 transition-all">
           <div className={`w-7 h-7 rounded-full ${iconColor} flex items-center justify-center shadow-lg shadow-black/20`}>
             <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20" />
           </div>
@@ -63,7 +63,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
 
   return (
     <div className="flex flex-col gap-2 w-full max-w-[480px]">
-      {/* LAYER 1: SIMPLE HEADER */}
+      {/* LAYER 1: CENTERED WHITE HEADER */}
       <div className="premium-card p-2.5 md:p-3 flex items-center justify-center relative">
         <h1 className="text-[10px] font-black uppercase tracking-[0.6em] text-white pl-2">Swap</h1>
         <button className="absolute right-3 p-1.5 rounded-xl hover:bg-white/[0.05] transition-all text-white/20 hover:text-white">
@@ -101,7 +101,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         />
       </div>
 
-      {/* LAYER 3: ULTRA-COMPACT FOOTER CARD */}
+      {/* LAYER 3: COMPACT GRADIENT ACTION CARD */}
       <div className="premium-card p-3 md:p-3.5 flex flex-col gap-3">
         <div className="flex justify-between items-center px-1">
           <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em] border-b border-dashed border-white/5 pb-0.5">
@@ -127,7 +127,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           </div>
         </div>
 
-        <button className="w-full py-2.5 md:py-3 rounded-[16px] bg-gradient-to-b from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white font-bold text-sm md:text-base transition-all shadow-[0_4px_20px_rgba(37,99,235,0.2)] active:scale-95 border border-white/10">
+        <button className="w-full py-2.5 md:py-3 rounded-[12px] bg-gradient-to-b from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white font-bold text-sm md:text-base transition-all shadow-[0_4px_20px_rgba(37,99,235,0.2)] active:scale-95 border border-white/10">
           Swap
         </button>
 

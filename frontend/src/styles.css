@@ -94,9 +94,9 @@ body {
   to { transform: translate(60px, 60px); }
 }
 
-/* PERFECT GLASSMORPHISM - Based on User Reference */
+/* PERFECT GLASSMORPHISM - Sharp Corners (12px) */
 .premium-card {
-  @apply rounded-[20px] transition-all duration-700 relative overflow-hidden;
+  @apply rounded-[12px] transition-all duration-700 relative overflow-hidden;
   border: 1px solid rgba(255, 255, 255, 0.125);
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
@@ -106,6 +106,14 @@ body {
     inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
+.glass-frame {
+  @apply rounded-[12px] overflow-hidden transition-all duration-700;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
 @media (min-width: 1280px) {
   .premium-card {
     backdrop-filter: blur(40px);
@@ -113,50 +121,28 @@ body {
   }
 }
 
-/* ARC SYMPHONY BUTTON - Blue, Black, White Gradient & Soft Font */
+/* THE DEEP IMPERIAL ARC BUTTON - Extra Rich Blue & 3D Text */
 .btn-premium {
-  @apply font-bold rounded-[24px] transition-all duration-500 transform active:scale-95 text-white;
-  /* Complex Gradient: Blue -> Black -> Soft White Highlight */
-  background: linear-gradient(135deg, #1e40af 0%, #000000 50%, #3b82f6 100%); 
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  @apply font-black rounded-[12px] transition-all duration-500 transform active:scale-95 text-white;
+  background: linear-gradient(180deg, #1e40af 0%, #172554 100%); 
+  border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow: 
-    0 10px 30px rgba(0, 0, 0, 0.6),
-    inset 0 1px 2px rgba(255, 255, 255, 0.15);
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
   position: relative;
   overflow: hidden;
-  /* Soft Glow Font Effect */
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-}
-
-.btn-premium::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-  transform: skewX(-25deg);
-  transition: 0.75s;
-}
-
-.btn-premium:hover::after {
-  left: 125%;
+  /* 3D Font Effect */
+  text-shadow: 
+    0 1px 0 rgba(255, 255, 255, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .btn-premium:hover {
   @apply scale-[1.02];
-  background: linear-gradient(135deg, #2563eb 0%, #050505 50%, #60a5fa 100%);
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 15px 40px rgba(59, 130, 246, 0.2);
-}
-
-.glass-frame {
-  @apply rounded-[32px] overflow-hidden transition-all duration-700;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  background: linear-gradient(180deg, #2563eb 0%, #1e3a8a 100%);
+  box-shadow: 
+    0 0 50px rgba(59, 130, 246, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.5);
 }
 
 /* Ticker Animation */

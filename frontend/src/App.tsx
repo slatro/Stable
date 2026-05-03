@@ -56,7 +56,7 @@ export default function App() {
           
           {/* Left: Protocol Status */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center gap-2 px-2 py-0.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <div className="flex items-center gap-2 px-2 py-0.5 rounded-[12px] bg-blue-500/10 border border-blue-500/20">
               <Zap size={10} className="text-blue-400" />
               <span className="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest">v2.0 Active</span>
             </div>
@@ -110,7 +110,7 @@ export default function App() {
 
           {/* Chart Column (Order-2 on mobile, Order-1 on desktop) */}
           <div className="flex flex-col gap-4 order-2 xl:order-1">
-            <div className="glass-frame h-[530px] xl:h-[580px]">
+            <div className="glass-frame h-[480px] xl:h-[480px]">
               <PriceChart />
             </div>
             {/* Restored Chart Detail Bar */}
