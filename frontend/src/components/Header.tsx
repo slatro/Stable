@@ -20,7 +20,7 @@ export const Header = () => {
       <div className="flex items-center gap-4">
         <div className="hidden lg:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20">
           <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">Arc Network</span>
+          <span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">Arc Testnet</span>
         </div>
         
         <button 

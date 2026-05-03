@@ -40,7 +40,7 @@ export default function App() {
           <div className="flex items-center gap-4 shrink-0">
             <div className="flex items-center gap-2 px-2 py-0.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
               <Zap size={10} className="text-blue-400" />
-              <span className="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest">Arc Testnet</span>
+              <span className="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest">v2.0 Active</span>
             </div>
             <div className="h-4 w-px bg-white/10 hidden md:block" />
             <p className="text-[10px] text-white/40 font-medium hidden md:block uppercase tracking-wider">
