@@ -7,8 +7,29 @@ import { Zap } from "lucide-react";
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col selection:bg-blue-500/30">
-      <div className="bg-glow" />
+    <div className="min-h-screen flex flex-col selection:bg-blue-500/30 relative">
+      {/* Architectural Background Patterns & Lines */}
+      <div className="bg-patterns" />
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        {/* Large Abstract SVG Arch based on requested image */}
+        <svg className="absolute w-[120%] h-[120%] -top-[10%] -left-[10%] opacity-20" viewBox="0 0 1000 1000" fill="none">
+          <path 
+            d="M50 800 Q 300 200, 950 500" 
+            stroke="white" 
+            strokeWidth="1" 
+            strokeOpacity="0.4" 
+          />
+          <path 
+            d="M100 900 Q 400 300, 900 600" 
+            stroke="white" 
+            strokeWidth="0.5" 
+            strokeOpacity="0.2" 
+          />
+          <line x1="240" y1="0" x2="240" y2="1000" stroke="white" strokeWidth="0.5" strokeOpacity="0.15" />
+          <line x1="0" y1="200" x2="1000" y2="200" stroke="white" strokeWidth="0.5" strokeOpacity="0.1" />
+        </svg>
+      </div>
+      
       <Header />
       
       {/* Restructured Top Info Bar with Restored Ticker */}

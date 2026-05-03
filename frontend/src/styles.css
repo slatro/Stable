@@ -2,138 +2,89 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-
 :root {
-  --bg-main: #020308;
-  --accent-primary: #3b82f6;
-  --accent-secondary: #8b5cf6;
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-}
+  /* Fonts */
+  --font-main: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  /* Architectural Colors from the provided image */
+  --bg-top: #0a1931;
+  --bg-middle: #183a5a;
+  --bg-bottom: #2a6f8a;
+  --accent-blue: #3b82f6;
+  --accent-cyan: #2dd4bf;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: var(--bg-main);
-  color: var(--text-main);
+  /* Dynamic Linear Gradient from the image */
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-middle) 50%, var(--bg-bottom) 100%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  font-family: var(--font-main);
   overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  background-image: 
-    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-    radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.15) 0%, transparent 40%);
+  margin: 0;
   min-height: 100vh;
 }
 
-/* Elegant Background Glow */
-.bg-glow {
+/* Geometric Patterns Overlay */
+.bg-patterns {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-  filter: blur(100px);
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* Premium Card Style */
-.premium-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  border: 1px solid var(--glass-border);
-  border-radius: 28px;
-  box-shadow: 
-    0 25px 50px -12px rgba(0, 0, 0, 0.5),
-    inset 0 1px 1px rgba(255, 255, 255, 0.05);
-}
-
-.input-group {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
-  padding: 20px;
-  transition: all 0.3s ease;
-}
-
-.input-group:focus-within {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
-}
-
-input {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  font-weight: 600;
+  top: 0;
+  left: 0;
   width: 100%;
-  outline: none;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 100px 100px;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.4;
 }
 
-input::placeholder {
-  color: rgba(255, 255, 255, 0.1);
+.premium-card {
+  @apply backdrop-blur-3xl rounded-[28px] border border-white/[0.08] transition-all duration-300;
+  background: rgba(15, 25, 50, 0.35);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
 }
 
-/* Button with Gradient & Glow */
+.premium-card:hover {
+  @apply border-white/20;
+}
+
+.swap-input {
+  @apply bg-white/[0.04] border border-white/[0.1] rounded-2xl px-5 py-4 w-full 
+         text-2xl font-bold text-white placeholder-white/10 outline-none transition-all duration-300;
+}
+
+.swap-input:focus {
+  @apply border-white/30 bg-white/[0.06];
+}
+
 .btn-premium {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  color: white;
-  padding: 16px;
-  border-radius: 18px;
-  font-weight: 700;
-  font-size: 1rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+  @apply font-bold rounded-2xl transition-all duration-300 transform active:scale-95;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.2);
 }
 
-.btn-premium:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.6);
-}
-
-.btn-premium:active {
-  transform: translateY(0);
-}
-
-/* Logo & Navigation */
+/* Nav Link Styling */
 .nav-link {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: color 0.2s;
+  @apply text-[13px] font-semibold text-white/50 transition-all duration-200 relative;
 }
 
-.nav-link:hover {
-  color: white;
+.nav-link:hover, .nav-link.active {
+  @apply text-white;
 }
 
-.nav-link.active {
-  color: white;
+.nav-link.active::after {
+  content: '';
+  @apply absolute -bottom-1 left-0 w-full h-[2px] bg-white rounded-full;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 /* Animations */
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-}
-
 @keyframes infiniteScroll {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
@@ -144,35 +95,6 @@ input::placeholder {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes fadeInLeft {
-  from { opacity: 0; transform: translateX(-30px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes fadeInRight {
-  from { opacity: 0; transform: translateX(30px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
 .animate-fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-fade-in-left { animation: fadeInLeft 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-fade-in-right { animation: fadeInRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-infinite-scroll { animation: infiniteScroll 40s linear infinite; }
-.float-animation { animation: float 6s ease-in-out infinite; }
-
 .no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-main);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
