@@ -1,5 +1,6 @@
 import React from 'react';
 import { Wallet, History, ExternalLink, PlusCircle, ShieldCheck, Globe, Activity } from 'lucide-react';
+import { Logo } from './Logo';
 import { useAccount, useReadContract } from 'wagmi';
 import { formatUnits } from 'viem';
 import { CONTRACT_ADDRESSES } from '../config/contracts';
@@ -148,8 +149,8 @@ export const Dashboard = () => {
       {/* FOOTER INFO */}
       <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 opacity-40 hover:opacity-80 transition-opacity">
         <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/40 border border-white/5">
-           <Globe size={14} className="text-blue-400" />
-           <div className="flex flex-col">
+           <Logo size={14} />
+           <div className="flex flex-col ml-1">
              <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Network Status</span>
              <span className="text-[10px] font-bold text-white">Arc Testnet (Active)</span>
            </div>
