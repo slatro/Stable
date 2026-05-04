@@ -166,7 +166,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
             </span>
           </button>
           <div className="flex items-center gap-1 text-[9px] font-bold text-white/20 uppercase tracking-widest">
-            Fee <span className="text-white/40">0.0025 mUSDC</span> <ChevronDown size={8} />
+            Fee <span className="text-white/40">0.0025 USDC</span>
           </div>
         </div>
       </div>
