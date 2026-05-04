@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpDown, Settings, ChevronDown, Wallet, Edit2, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowUpDown, Settings, ChevronDown, Wallet, Edit2, RefreshCw, Loader2, ArrowRight } from 'lucide-react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import { CONTRACT_ADDRESSES } from '../config/contracts';
@@ -9,7 +9,6 @@ import ERC20_ABI from '../abis/ERC20.json';
 export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlippage: (val: string) => void }) => {
   const { address, isConnected } = useAccount();
   const [fromAmount, setFromAmount] = useState('0');
-  const [toAmount, setToAmount] = useState('0');
   const [isEditingSlippage, setIsEditingSlippage] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSwapped, setIsSwapped] = useState(false); // false: EURC -> USDC, true: USDC -> EURC
@@ -27,45 +26,63 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
     address: tokenInAddress as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
-    args: [address],
+    args: address ? [address] : undefined,
+    query: { enabled: !!address }
   });
 
   const { data: balanceOut, refetch: refetchOut } = useReadContract({
     address: tokenOutAddress as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
-    args: [address],
+    args: address ? [address] : undefined,
+    query: { enabled: !!address }
   });
 
-  // 3. Read Allowance
+  // 3. Read Amount Out (Quote)
+  const { data: amountOutRaw, refetch: refetchQuote } = useReadContract({
+    address: CONTRACT_ADDRESSES.AMM as `0x${string}`,
+    abi: AMM_ABI,
+    functionName: 'getAmountOut',
+    args: [parseUnits(fromAmount || '0', tokenInDecimals), tokenInAddress],
+    query: { enabled: parseFloat(fromAmount || '0') > 0 }
+  });
+
+  const toAmount = amountOutRaw ? formatUnits(amountOutRaw as bigint, tokenOutDecimals) : '0.00';
+
+  // 4. Read Allowance
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: tokenInAddress as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'allowance',
-    args: [address, CONTRACT_ADDRESSES.AMM],
+    args: address ? [address, CONTRACT_ADDRESSES.AMM] : undefined,
+    query: { enabled: !!address }
   });
 
-  // 4. Swap Logic
-  const { data: hash, writeContract, isPending: isSwapPending } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+  // 5. Write Transactions
+  const { data: swapHash, writeContract: swapWrite, isPending: isSwapPending } = useWriteContract();
+  const { isLoading: isSwapConfirming, isSuccess: isSwapConfirmed } = useWaitForTransactionReceipt({ hash: swapHash });
 
-  // 5. Approval Logic
   const { data: approveHash, writeContract: approveWrite, isPending: isApprovePending } = useWriteContract();
   const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } = useWaitForTransactionReceipt({ hash: approveHash });
 
-  // Refetch after success
-  useEffect(() => {
-    if (isConfirmed || isApproveConfirmed) {
-      refetchIn();
-      refetchOut();
-      refetchAllowance();
-      if (isConfirmed) setFromAmount('0');
-    }
-  }, [isConfirmed, isApproveConfirmed]);
+  // 6. Refresh Data
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([refetchIn(), refetchOut(), refetchQuote(), refetchAllowance()]);
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
 
+  useEffect(() => {
+    if (isSwapConfirmed || isApproveConfirmed) {
+      handleRefresh();
+      if (isSwapConfirmed) setFromAmount('0');
+    }
+  }, [isSwapConfirmed, isApproveConfirmed]);
+
+  // 7. Logic Helpers
   const needsApproval = isConnected && allowance !== undefined && 
-    parseFloat(fromAmount) > 0 && 
-    (allowance as bigint) < parseUnits(fromAmount, tokenInDecimals);
+    parseFloat(fromAmount || '0') > 0 && 
+    (allowance as bigint) < parseUnits(fromAmount || '0', tokenInDecimals);
 
   const handleAction = () => {
     if (!isConnected) return;
@@ -78,14 +95,19 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
         args: [CONTRACT_ADDRESSES.AMM, parseUnits(fromAmount, tokenInDecimals)],
       });
     } else {
+      // Slippage calculation
+      const minAmountOut = amountOutRaw 
+        ? (amountOutRaw as bigint) * BigInt(Math.floor((100 - parseFloat(slippage)) * 100)) / 10000n
+        : 0n;
+
       writeContract({
         address: CONTRACT_ADDRESSES.AMM as `0x${string}`,
         abi: AMM_ABI,
         functionName: 'swap',
         args: [
           tokenInAddress,
-          tokenOutAddress,
-          parseUnits(fromAmount, tokenInDecimals)
+          parseUnits(fromAmount, tokenInDecimals),
+          minAmountOut
         ],
       });
     }
@@ -94,7 +116,6 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
   const handleSwapTokens = () => {
     setIsSwapped(!isSwapped);
     setFromAmount('0');
-    setToAmount('0');
   };
 
   const TokenBox = ({ type, amount, setAmount, symbol, name, iconColor, isReadOnly, balance, decimals }: any) => {
@@ -104,19 +125,28 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
       <div className="flex flex-col gap-1.5 mb-1">
         <div className="flex justify-between items-center px-1">
           <div className="flex items-center gap-2 text-[9px] font-bold text-white/30 uppercase tracking-wider">
-            <Wallet size={10} style={{ color: '#FDF5E6' }} />
+            <Wallet size={10} className="text-blue-400/50" />
             <span>Balance: {formattedBalance} {symbol}</span>
           </div>
+          {!isReadOnly && parseFloat(formattedBalance) > 0 && (
+            <button 
+              onClick={() => setAmount(formatUnits(balance as bigint, decimals))}
+              className="text-[9px] font-bold text-blue-400 hover:text-white transition-colors uppercase"
+            >
+              Max
+            </button>
+          )}
         </div>
         
-        <div className="bg-white/10 border border-white/[0.12] backdrop-blur-md rounded-[12px] p-3 flex items-center justify-between hover:bg-white/[0.15] transition-all group">
-          <div className="flex items-center gap-3 px-2 py-0.5 rounded-[12px]">
-            <div className={`w-7 h-7 rounded-full ${iconColor} flex items-center justify-center shadow-lg shadow-black/20`}>
-              <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20" />
+        <div className="bg-white/5 border border-white/[0.08] backdrop-blur-md rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.08] transition-all group border-transparent focus-within:border-blue-500/30">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full ${iconColor} flex items-center justify-center shadow-lg shadow-black/40 relative overflow-hidden`}>
+               <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent" />
+               <span className="text-[10px] font-bold text-white relative z-10">{symbol[1]}</span>
             </div>
             <div className="text-left">
-              <span className="font-bold text-base text-white">{symbol}</span>
-              <div className="text-[9px] font-medium text-white/20">{name}</div>
+              <span className="font-bold text-base text-white block leading-tight">{symbol}</span>
+              <div className="text-[9px] font-medium text-white/20 uppercase tracking-tighter">{name}</div>
             </div>
           </div>
 
@@ -126,97 +156,115 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               readOnly={isReadOnly}
-              placeholder="0.0"
-              className={`bg-transparent text-xl font-bold text-white text-right outline-none w-28 placeholder-white/10 ${isReadOnly ? 'opacity-60' : ''}`}
+              placeholder="0.00"
+              className={`bg-transparent text-2xl font-bold text-white text-right outline-none w-32 placeholder-white/5 ${isReadOnly ? 'opacity-60 cursor-default' : 'cursor-text'}`}
             />
+            {isReadOnly && (
+              <div className="text-[9px] font-medium text-white/10 uppercase tracking-widest mt-1">Estimated Output</div>
+            )}
           </div>
         </div>
       </div>
     );
   };
 
-  const fromToken = isSwapped ? { symbol: 'mUSDC', name: 'Arc Dollar', color: 'bg-emerald-500', balance: balanceIn, decimals: 6 } : { symbol: 'mEURC', name: 'Arc Euro', color: 'bg-blue-600', balance: balanceIn, decimals: 18 };
-  const toToken = isSwapped ? { symbol: 'mEURC', name: 'Arc Euro', color: 'bg-blue-600', balance: balanceOut, decimals: 18 } : { symbol: 'mUSDC', name: 'Arc Dollar', color: 'bg-emerald-500', balance: balanceOut, decimals: 6 };
-
-  const isLoading = isSwapPending || isConfirming || isApprovePending || isApproveConfirming;
+  const isButtonLoading = isSwapPending || isSwapConfirming || isApprovePending || isApproveConfirming;
 
   return (
-    <div className="flex flex-col h-[506px] w-full max-w-[480px] justify-between">
+    <div className="flex flex-col h-[506px] w-full max-w-[480px] justify-between group/card">
       {/* HEADER CARD */}
-      <div className="premium-card p-3.5 md:p-4 flex items-center justify-center relative shrink-0">
-        <h1 className="text-sm md:text-base font-black text-white pl-2 text-shadow-premium">Swap</h1>
-        <button className="absolute right-4 p-1.5 rounded-xl hover:bg-white/[0.05] transition-all text-white/20 hover:text-white">
-          <Settings size={18} />
+      <div className="premium-card p-4 flex items-center justify-between relative shrink-0">
+        <div className="flex items-center gap-2 pl-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+          <h1 className="text-xs font-black text-white/90 uppercase tracking-[0.3em]">Direct Swap</h1>
+        </div>
+        <button className="p-1.5 rounded-xl hover:bg-white/[0.05] transition-all text-white/20 hover:text-white">
+          <Settings size={16} />
         </button>
       </div>
 
       {/* INPUT CARD */}
-      <div className="premium-card p-4 md:p-5 flex-1 flex flex-col justify-center relative mx-0 my-[5px]">
+      <div className="premium-card p-5 flex-1 flex flex-col justify-center relative mx-0 my-[6px]">
         <TokenBox 
           type="From" 
-          symbol={fromToken.symbol} 
-          name={fromToken.name} 
+          symbol={isSwapped ? 'mUSDC' : 'mEURC'} 
+          name={isSwapped ? 'Arc Dollar' : 'Arc Euro'} 
           amount={fromAmount} 
           setAmount={setFromAmount} 
-          iconColor={fromToken.color} 
+          iconColor={isSwapped ? 'bg-emerald-500' : 'bg-blue-600'} 
           isReadOnly={false} 
-          balance={fromToken.balance}
-          decimals={fromToken.decimals}
+          balance={balanceIn}
+          decimals={isSwapped ? 6 : 18}
         />
         
-        <div className="relative h-1 flex items-center justify-center my-3">
+        <div className="relative h-2 flex items-center justify-center my-4">
           <div className="absolute inset-x-0 h-px bg-white/[0.04]" />
           <button 
             onClick={handleSwapTokens}
-            className="z-10 w-7 h-7 rounded-full bg-[#0a0a0c] border border-white/[0.12] flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl group/swap"
-            style={{ color: '#FDF5E6' }}
+            className="z-10 w-9 h-9 rounded-full bg-[#0a0a0b] border border-white/10 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] group/swapBtn hover:border-blue-500/50"
           >
-            <ArrowUpDown size={12} className="group-hover/swap:rotate-180 transition-transform duration-500" />
+            <ArrowUpDown size={14} className="text-white/40 group-hover/swapBtn:text-blue-400 group-hover/swapBtn:rotate-180 transition-all duration-500" />
           </button>
         </div>
 
         <TokenBox 
           type="To" 
-          symbol={toToken.symbol} 
-          name={toToken.name} 
+          symbol={isSwapped ? 'mEURC' : 'mUSDC'} 
+          name={isSwapped ? 'Arc Euro' : 'Arc Dollar'} 
           amount={toAmount} 
-          setAmount={setToAmount} 
-          iconColor={toToken.color} 
+          setAmount={() => {}} 
+          iconColor={isSwapped ? 'bg-blue-600' : 'bg-emerald-500'} 
           isReadOnly={true} 
-          balance={toToken.balance}
-          decimals={toToken.decimals}
+          balance={balanceOut}
+          decimals={isSwapped ? 18 : 6}
         />
       </div>
 
       {/* FOOTER ACTION CARD */}
-      <div className="premium-card p-3.5 md:p-4 flex flex-col gap-3 shrink-0">
+      <div className="premium-card p-5 flex flex-col gap-4 shrink-0">
         <div className="flex justify-between items-center px-1">
-          <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em]">Slippage Tolerance</span>
-          <div className="flex items-center gap-2 bg-[#FDF5E6]/5 border border-[#FDF5E6]/10 px-2.5 py-1 rounded-xl">
-            <span className="text-[9px] font-black" style={{ color: '#FDF5E6' }}>{slippage}%</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em]">Slippage</span>
+            <div className="h-px w-4 bg-white/10" />
+            <span className="text-[10px] font-bold text-blue-400/80">{slippage}%</span>
           </div>
+          <button 
+            onClick={() => setIsEditingSlippage(true)}
+            className="p-1.5 rounded-lg hover:bg-white/10 text-white/20 hover:text-white transition-all"
+          >
+            <Edit2 size={10} />
+          </button>
         </div>
 
         <button 
           onClick={handleAction}
-          disabled={!isConnected || isLoading || parseFloat(fromAmount) <= 0}
-          className={`w-full py-2 md:py-2.5 rounded-[12px] text-white font-black text-sm md:text-base transition-all shadow-xl active:scale-95 text-shadow-premium flex items-center justify-center gap-2 ${
-            !isConnected || isLoading || parseFloat(fromAmount) <= 0
-              ? "bg-white/5 text-white/20 cursor-not-allowed"
-              : "bg-gradient-to-b from-blue-600 to-[#111827] hover:from-blue-500 hover:to-[#1f2937]"
+          disabled={!isConnected || isButtonLoading || parseFloat(fromAmount || '0') <= 0}
+          className={`group relative overflow-hidden w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] transition-all duration-500 ${
+            !isConnected || isButtonLoading || parseFloat(fromAmount || '0') <= 0
+              ? "bg-white/[0.02] text-white/10 border border-white/5 cursor-not-allowed"
+              : "bg-white text-black hover:scale-[1.02] shadow-[0_0_30px_rgba(255,255,255,0.15)] active:scale-95"
           }`}
         >
-          {isLoading ? <Loader2 size={20} className="animate-spin" /> : null}
-          {!isConnected ? "Connect Wallet" : needsApproval ? `Approve ${tokenInSymbol}` : "Swap"}
+          {isButtonLoading ? (
+            <div className="flex items-center justify-center gap-3">
+              <Loader2 size={14} className="animate-spin" />
+              <span>Processing...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-3">
+              {!isConnected ? "Connect Wallet" : needsApproval ? `Approve ${tokenInSymbol}` : "Execute Swap"}
+              {!isButtonLoading && isConnected && parseFloat(fromAmount || '0') > 0 && <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />}
+            </div>
+          )}
         </button>
 
-        <div className="flex justify-between items-center px-2">
-          <div className="flex items-center gap-1.5 text-[9px] font-bold text-white/20 tracking-tight">
-            <RefreshCw size={10} className={`text-blue-500/60 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Predicted Rate: ~1.17 {tokenInSymbol}/{tokenOutSymbol}</span>
+        <div className="flex justify-between items-center px-1">
+          <div className="flex items-center gap-1.5 text-[9px] font-bold text-white/10 tracking-widest uppercase">
+            <RefreshCw size={10} className={`text-blue-500/40 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>Rate Updated</span>
           </div>
-          <div className="flex items-center gap-1 text-[9px] font-bold text-white/20 uppercase tracking-widest">
-            Fee <span className="text-white/40">0.3%</span>
+          <div className="flex items-center gap-1 text-[9px] font-bold text-white/10 uppercase tracking-widest">
+            Protocol Fee: <span className="text-white/30">0.05%</span>
           </div>
         </div>
       </div>

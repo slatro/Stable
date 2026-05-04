@@ -95,31 +95,30 @@ export const Header = () => {
 
             {/* Account Info Box */}
             {isAccountBoxOpen && isConnected && (
-              <div className="absolute top-full right-0 mt-2 w-52 bg-[#0d0d0f] border border-white/10 rounded-2xl shadow-2xl animate-in fade-in slide-in-from-top-1 duration-200 z-[100] backdrop-blur-xl">
-                <div className="p-4 flex flex-col gap-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2 px-1">
-                      <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Account</span>
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05]">
-                      <span className="text-[10px] font-mono text-white/70 truncate mr-2">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
-                      <button 
-                        onClick={handleCopy}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all shrink-0"
-                      >
-                        {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                      </button>
-                    </div>
+              <div className="absolute top-[calc(100%+12px)] right-0 w-48 bg-[#0a0a0b] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-top-2 duration-300 z-[100] backdrop-blur-2xl overflow-hidden">
+                <div className="p-3 flex flex-col gap-3">
+                  <div className="px-1 py-0.5 flex items-center justify-between border-b border-white/5 pb-2">
+                    <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Active Account</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                  </div>
+                  
+                  <div className="flex items-center justify-between px-2.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+                    <span className="text-[10px] font-mono text-white/80">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+                    <button 
+                      onClick={handleCopy}
+                      className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all"
+                      title="Copy Address"
+                    >
+                      {copied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                    </button>
                   </div>
 
                   <button 
                     onClick={handleLogout}
-                    className="w-full py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[9px] font-bold uppercase tracking-[0.2em] transition-all border border-red-500/10 flex items-center justify-center gap-2"
+                    className="w-full py-2 flex items-center justify-center gap-2 rounded-xl bg-white/[0.02] hover:bg-red-500/10 text-white/40 hover:text-red-400 transition-all border border-white/5 text-[9px] font-bold uppercase tracking-widest"
                   >
                     <LogOut size={12} />
-                    Disconnect
+                    Sign Out
                   </button>
                 </div>
               </div>
