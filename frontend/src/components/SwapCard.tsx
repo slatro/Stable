@@ -1,87 +1,124 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpDown, Settings, ChevronDown, Wallet, Edit2, RefreshCw } from 'lucide-react';
-
-/* 
-  ARCFX TERMINAL - FINAL SEAL v2.7
-  - Implementation: Strict 506px Total Height for the SwapCard stack.
-  - Alignment: Synchronized with the 506px chart height.
-  - Theme: Imperial Cream (#FDF5E6).
-*/
+import { ArrowUpDown, Settings, ChevronDown, Wallet, Edit2, RefreshCw, Loader2 } from 'lucide-react';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { formatUnits, parseUnits } from 'viem';
+import { CONTRACT_ADDRESSES } from '../config/contracts';
+import AMM_ABI from '../abis/ArcFXAMM.json';
+import ERC20_ABI from '../abis/ERC20.json';
 
 export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlippage: (val: string) => void }) => {
-  const [fromAmount, setFromAmount] = useState('10');
-  const [toAmount, setToAmount] = useState('11.73');
+  const { address, isConnected } = useAccount();
+  const [fromAmount, setFromAmount] = useState('0');
+  const [toAmount, setToAmount] = useState('0');
   const [isEditingSlippage, setIsEditingSlippage] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [rate, setRate] = useState(1.1733); 
-  const [isSwapped, setIsSwapped] = useState(false);
+  const [isSwapped, setIsSwapped] = useState(false); // false: EURC -> USDC, true: USDC -> EURC
 
-  const fetchLiveRate = async () => {
-    try {
-      const response = await fetch('https://api.coinbase.com/v2/prices/EUR-USD/spot');
-      const data = await response.json();
-      if (data?.data?.amount) {
-        setRate(parseFloat(data.data.amount));
-      }
-    } catch (error) {
-      console.error('API Error:', error);
-    }
-  };
+  // 1. Contract Constants
+  const tokenInAddress = isSwapped ? CONTRACT_ADDRESSES.mUSDC : CONTRACT_ADDRESSES.mEURC;
+  const tokenOutAddress = isSwapped ? CONTRACT_ADDRESSES.mEURC : CONTRACT_ADDRESSES.mUSDC;
+  const tokenInDecimals = isSwapped ? 6 : 18;
+  const tokenOutDecimals = isSwapped ? 18 : 6;
+  const tokenInSymbol = isSwapped ? 'mUSDC' : 'mEURC';
+  const tokenOutSymbol = isSwapped ? 'mEURC' : 'mUSDC';
 
+  // 2. Read Balances
+  const { data: balanceIn, refetch: refetchIn } = useReadContract({
+    address: tokenInAddress as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [address],
+  });
+
+  const { data: balanceOut, refetch: refetchOut } = useReadContract({
+    address: tokenOutAddress as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: [address],
+  });
+
+  // 3. Read Allowance
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: tokenInAddress as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: [address, CONTRACT_ADDRESSES.AMM],
+  });
+
+  // 4. Swap Logic
+  const { data: hash, writeContract, isPending: isSwapPending } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+
+  // 5. Approval Logic
+  const { data: approveHash, writeContract: approveWrite, isPending: isApprovePending } = useWriteContract();
+  const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } = useWaitForTransactionReceipt({ hash: approveHash });
+
+  // Refetch after success
   useEffect(() => {
-    fetchLiveRate();
-    const interval = setInterval(handleRefresh, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    if (!isNaN(parseFloat(fromAmount))) {
-      const currentRate = isSwapped ? (1 / rate) : rate;
-      setToAmount((parseFloat(fromAmount) * currentRate).toFixed(4));
+    if (isConfirmed || isApproveConfirmed) {
+      refetchIn();
+      refetchOut();
+      refetchAllowance();
+      if (isConfirmed) setFromAmount('0');
     }
-  }, [fromAmount, rate, isSwapped]);
+  }, [isConfirmed, isApproveConfirmed]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchLiveRate();
-    setTimeout(() => setIsRefreshing(false), 800);
+  const needsApproval = isConnected && allowance !== undefined && 
+    parseFloat(fromAmount) > 0 && 
+    (allowance as bigint) < parseUnits(fromAmount, tokenInDecimals);
+
+  const handleAction = () => {
+    if (!isConnected) return;
+    
+    if (needsApproval) {
+      approveWrite({
+        address: tokenInAddress as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'approve',
+        args: [CONTRACT_ADDRESSES.AMM, parseUnits(fromAmount, tokenInDecimals)],
+      });
+    } else {
+      writeContract({
+        address: CONTRACT_ADDRESSES.AMM as `0x${string}`,
+        abi: AMM_ABI,
+        functionName: 'swap',
+        args: [
+          tokenInAddress,
+          tokenOutAddress,
+          parseUnits(fromAmount, tokenInDecimals)
+        ],
+      });
+    }
   };
 
   const handleSwapTokens = () => {
     setIsSwapped(!isSwapped);
-    const temp = fromAmount;
-    setFromAmount(toAmount);
-    setToAmount(temp);
+    setFromAmount('0');
+    setToAmount('0');
   };
 
-  const TokenBox = ({ type, amount, setAmount, symbol, name, iconColor, isReadOnly }: any) => {
-    const finalUsdValue = symbol === 'mEURC' ? (parseFloat(amount || '0') * rate).toFixed(2) : (parseFloat(amount || '0') * 1.0).toFixed(2);
+  const TokenBox = ({ type, amount, setAmount, symbol, name, iconColor, isReadOnly, balance, decimals }: any) => {
+    const formattedBalance = balance ? parseFloat(formatUnits(balance as bigint, decimals)).toFixed(2) : '0.00';
 
     return (
       <div className="flex flex-col gap-1.5 mb-1">
         <div className="flex justify-between items-center px-1">
           <div className="flex items-center gap-2 text-[9px] font-bold text-white/30 uppercase tracking-wider">
             <Wallet size={10} style={{ color: '#FDF5E6' }} />
-            <span>{type}: 0x2EE5...1704</span>
-          </div>
-          <div className="text-[9px] font-bold text-white/30 flex items-center gap-1">
-            <Settings size={9} /> {type === 'From' ? '2,450.00' : '1,200.00'}
+            <span>Balance: {formattedBalance} {symbol}</span>
           </div>
         </div>
         
         <div className="bg-white/10 border border-white/[0.12] backdrop-blur-md rounded-[12px] p-3 flex items-center justify-between hover:bg-white/[0.15] transition-all group">
-          <button className="flex items-center gap-3 px-2 py-0.5 rounded-[12px] hover:bg-white/5 transition-all">
+          <div className="flex items-center gap-3 px-2 py-0.5 rounded-[12px]">
             <div className={`w-7 h-7 rounded-full ${iconColor} flex items-center justify-center shadow-lg shadow-black/20`}>
               <div className="w-3.5 h-3.5 rounded-full border-2 border-white/20" />
             </div>
             <div className="text-left">
-              <div className="flex items-center gap-1">
-                <span className="font-bold text-base text-white">{symbol}</span>
-                <ChevronDown size={12} className="text-white/30" />
-              </div>
+              <span className="font-bold text-base text-white">{symbol}</span>
               <div className="text-[9px] font-medium text-white/20">{name}</div>
             </div>
-          </button>
+          </div>
 
           <div className="text-right">
             <input 
@@ -89,17 +126,19 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               readOnly={isReadOnly}
+              placeholder="0.0"
               className={`bg-transparent text-xl font-bold text-white text-right outline-none w-28 placeholder-white/10 ${isReadOnly ? 'opacity-60' : ''}`}
             />
-            <div className="text-[9px] font-medium text-white/10">~{finalUsdValue} USD</div>
           </div>
         </div>
       </div>
     );
   };
 
-  const fromToken = isSwapped ? { symbol: 'mUSDC', name: 'Arc Dollar', color: 'bg-emerald-500' } : { symbol: 'mEURC', name: 'Arc Euro', color: 'bg-blue-600' };
-  const toToken = isSwapped ? { symbol: 'mEURC', name: 'Arc Euro', color: 'bg-blue-600' } : { symbol: 'mUSDC', name: 'Arc Dollar', color: 'bg-emerald-500' };
+  const fromToken = isSwapped ? { symbol: 'mUSDC', name: 'Arc Dollar', color: 'bg-emerald-500', balance: balanceIn, decimals: 6 } : { symbol: 'mEURC', name: 'Arc Euro', color: 'bg-blue-600', balance: balanceIn, decimals: 18 };
+  const toToken = isSwapped ? { symbol: 'mEURC', name: 'Arc Euro', color: 'bg-blue-600', balance: balanceOut, decimals: 18 } : { symbol: 'mUSDC', name: 'Arc Dollar', color: 'bg-emerald-500', balance: balanceOut, decimals: 6 };
+
+  const isLoading = isSwapPending || isConfirming || isApprovePending || isApproveConfirming;
 
   return (
     <div className="flex flex-col h-[506px] w-full max-w-[480px] justify-between">
@@ -113,7 +152,17 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
 
       {/* INPUT CARD */}
       <div className="premium-card p-4 md:p-5 flex-1 flex flex-col justify-center relative mx-0 my-[5px]">
-        <TokenBox type="From" symbol={fromToken.symbol} name={fromToken.name} amount={fromAmount} setAmount={setFromAmount} iconColor={fromToken.color} isReadOnly={false} />
+        <TokenBox 
+          type="From" 
+          symbol={fromToken.symbol} 
+          name={fromToken.name} 
+          amount={fromAmount} 
+          setAmount={setFromAmount} 
+          iconColor={fromToken.color} 
+          isReadOnly={false} 
+          balance={fromToken.balance}
+          decimals={fromToken.decimals}
+        />
         
         <div className="relative h-1 flex items-center justify-center my-3">
           <div className="absolute inset-x-0 h-px bg-white/[0.04]" />
@@ -126,47 +175,48 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           </button>
         </div>
 
-        <TokenBox type="To" symbol={toToken.symbol} name={toToken.name} amount={toAmount} setAmount={setToAmount} iconColor={toToken.color} isReadOnly={true} />
+        <TokenBox 
+          type="To" 
+          symbol={toToken.symbol} 
+          name={toToken.name} 
+          amount={toAmount} 
+          setAmount={setToAmount} 
+          iconColor={toToken.color} 
+          isReadOnly={true} 
+          balance={toToken.balance}
+          decimals={toToken.decimals}
+        />
       </div>
 
       {/* FOOTER ACTION CARD */}
       <div className="premium-card p-3.5 md:p-4 flex flex-col gap-3 shrink-0">
         <div className="flex justify-between items-center px-1">
           <span className="text-[9px] font-bold text-white/20 uppercase tracking-[0.2em]">Slippage Tolerance</span>
-          <div 
-            onClick={() => setIsEditingSlippage(true)}
-            className="flex items-center gap-2 bg-[#FDF5E6]/5 border border-[#FDF5E6]/10 px-2.5 py-1 rounded-xl cursor-pointer hover:bg-[#FDF5E6]/10 transition-all"
-          >
-            {isEditingSlippage ? (
-              <input 
-                autoFocus
-                type="number"
-                value={slippage}
-                onChange={(e) => setSlippage(e.target.value)}
-                onBlur={() => setIsEditingSlippage(false)}
-                className="bg-transparent text-[9px] font-black w-8 outline-none"
-                style={{ color: '#FDF5E6' }}
-              />
-            ) : (
-              <span className="text-[9px] font-black" style={{ color: '#FDF5E6' }}>{slippage}%</span>
-            )}
-            <Edit2 size={8} style={{ color: '#FDF5E6', opacity: 0.6 }} />
+          <div className="flex items-center gap-2 bg-[#FDF5E6]/5 border border-[#FDF5E6]/10 px-2.5 py-1 rounded-xl">
+            <span className="text-[9px] font-black" style={{ color: '#FDF5E6' }}>{slippage}%</span>
           </div>
         </div>
 
-        <button className="w-full py-2 md:py-2.5 rounded-[12px] bg-gradient-to-b from-blue-600 to-[#111827] hover:from-blue-500 hover:to-[#1f2937] text-white font-black text-sm md:text-base transition-all shadow-xl active:scale-95 text-shadow-premium">
-          Swap
+        <button 
+          onClick={handleAction}
+          disabled={!isConnected || isLoading || parseFloat(fromAmount) <= 0}
+          className={`w-full py-2 md:py-2.5 rounded-[12px] text-white font-black text-sm md:text-base transition-all shadow-xl active:scale-95 text-shadow-premium flex items-center justify-center gap-2 ${
+            !isConnected || isLoading || parseFloat(fromAmount) <= 0
+              ? "bg-white/5 text-white/20 cursor-not-allowed"
+              : "bg-gradient-to-b from-blue-600 to-[#111827] hover:from-blue-500 hover:to-[#1f2937]"
+          }`}
+        >
+          {isLoading ? <Loader2 size={20} className="animate-spin" /> : null}
+          {!isConnected ? "Connect Wallet" : needsApproval ? `Approve ${tokenInSymbol}` : "Swap"}
         </button>
 
         <div className="flex justify-between items-center px-2">
-          <button onClick={handleRefresh} className="flex items-center gap-1.5 text-[9px] font-bold text-white/20 tracking-tight hover:text-blue-400 transition-colors">
+          <div className="flex items-center gap-1.5 text-[9px] font-bold text-white/20 tracking-tight">
             <RefreshCw size={10} className={`text-blue-500/60 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className={isRefreshing ? 'animate-pulse text-white' : ''}>
-              1 {fromToken.symbol} ≈ {isSwapped ? (1/rate).toFixed(4) : rate.toFixed(4)} {toToken.symbol}
-            </span>
-          </button>
+            <span>Predicted Rate: ~1.17 {tokenInSymbol}/{tokenOutSymbol}</span>
+          </div>
           <div className="flex items-center gap-1 text-[9px] font-bold text-white/20 uppercase tracking-widest">
-            Fee <span className="text-white/40">0.0025 USDC</span>
+            Fee <span className="text-white/40">0.3%</span>
           </div>
         </div>
       </div>
