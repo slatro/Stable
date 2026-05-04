@@ -112,7 +112,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
       </div>
 
       {/* INPUT CARD */}
-      <div className="premium-card p-4 md:p-5 flex-1 flex flex-col justify-center relative mx-0 my-[3px]">
+      <div className="premium-card p-4 md:p-5 flex-1 flex flex-col justify-center relative mx-0 my-[5px]">
         <TokenBox type="From" symbol={fromToken.symbol} name={fromToken.name} amount={fromAmount} setAmount={setFromAmount} iconColor={fromToken.color} isReadOnly={false} />
         
         <div className="relative h-1 flex items-center justify-center my-3">
