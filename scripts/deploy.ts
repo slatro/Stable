@@ -22,21 +22,23 @@ async function main() {
 
   // 3. Deploy ArcFXAMM
   const ArcFXAMM = await ethers.getContractFactory("ArcFXAMM");
-  const amm = await ArcFXAMM.deploy(usdcAddress, eurcAddress);
+  // Pass treasury address as the 3rd argument (using deployer for now)
+  const amm = await ArcFXAMM.deploy(usdcAddress, eurcAddress, deployer.address);
   await amm.waitForDeployment();
   const ammAddress = await amm.getAddress();
   console.log("ArcFXAMM deployed to:", ammAddress);
 
   // 4. Mint initial tokens to deployer
-  const mintAmount = ethers.parseEther("1000000");
+  const mintAmountUSDC = ethers.parseUnits("1000000", 6);
+  const mintAmountEURC = ethers.parseUnits("1000000", 18);
   console.log("Minting tokens...");
-  await usdc.mint(deployer.address, mintAmount);
-  await eurc.mint(deployer.address, mintAmount);
+  await usdc.mint(deployer.address, mintAmountUSDC);
+  await eurc.mint(deployer.address, mintAmountEURC);
 
   // 5. Approve AMM
   console.log("Approving AMM...");
-  const liqUSDC = ethers.parseEther("10000");
-  const liqEURC = ethers.parseEther("9200");
+  const liqUSDC = ethers.parseUnits("10000", 6);
+  const liqEURC = ethers.parseUnits("11730", 18); // ~1.173 rate
   await usdc.approve(ammAddress, liqUSDC);
   await eurc.approve(ammAddress, liqEURC);
 
