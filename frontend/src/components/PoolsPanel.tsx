@@ -42,9 +42,9 @@ export const PoolsPanel = () => {
     query: { enabled: !!address }
   });
 
-  // 2. Balances & Allowances
+  // 5. Read Balances & Allowances
   const { data: balanceA, refetch: refetchBalA } = useReadContract({
-    address: CONTRACT_ADDRESSES.mEURC as `0x${string}`,
+    address: CONTRACT_ADDRESSES.mUSDC as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
@@ -52,7 +52,7 @@ export const PoolsPanel = () => {
   });
 
   const { data: balanceB, refetch: refetchBalB } = useReadContract({
-    address: CONTRACT_ADDRESSES.mUSDC as `0x${string}`,
+    address: CONTRACT_ADDRESSES.mEURC as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
@@ -60,7 +60,7 @@ export const PoolsPanel = () => {
   });
 
   const { data: allowanceA, refetch: refetchAllA } = useReadContract({
-    address: CONTRACT_ADDRESSES.mEURC as `0x${string}`,
+    address: CONTRACT_ADDRESSES.mUSDC as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, CONTRACT_ADDRESSES.AMM] : undefined,
@@ -68,7 +68,7 @@ export const PoolsPanel = () => {
   });
 
   const { data: allowanceB, refetch: refetchAllB } = useReadContract({
-    address: CONTRACT_ADDRESSES.mUSDC as `0x${string}`,
+    address: CONTRACT_ADDRESSES.mEURC as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, CONTRACT_ADDRESSES.AMM] : undefined,
@@ -104,20 +104,20 @@ export const PoolsPanel = () => {
   }, [isAddConfirmed, isRemoveConfirmed, isApproveAConfirmed, isApproveBConfirmed]);
 
   // Logic Helpers
-  const needsApproveA = isConnected && allowanceA !== undefined && parseFloat(amountA || '0') > 0 && (allowanceA as bigint) < parseUnits(amountA, 18);
-  const needsApproveB = isConnected && allowanceB !== undefined && parseFloat(amountB || '0') > 0 && (allowanceB as bigint) < parseUnits(amountB, 6);
+  const needsApproveA = isConnected && allowanceA !== undefined && parseFloat(amountA || '0') > 0 && (allowanceA as bigint) < parseUnits(amountA, 6);
+  const needsApproveB = isConnected && allowanceB !== undefined && parseFloat(amountB || '0') > 0 && (allowanceB as bigint) < parseUnits(amountB, 18);
 
   const handleAddLiquidity = () => {
     if (needsApproveA) {
-      approveAWrite({ address: CONTRACT_ADDRESSES.mEURC as `0x${string}`, abi: ERC20_ABI, functionName: 'approve', args: [CONTRACT_ADDRESSES.AMM, parseUnits(amountA, 18)] });
+      approveAWrite({ address: CONTRACT_ADDRESSES.mUSDC as `0x${string}`, abi: ERC20_ABI, functionName: 'approve', args: [CONTRACT_ADDRESSES.AMM, parseUnits(amountA, 6)] });
     } else if (needsApproveB) {
-      approveBWrite({ address: CONTRACT_ADDRESSES.mUSDC as `0x${string}`, abi: ERC20_ABI, functionName: 'approve', args: [CONTRACT_ADDRESSES.AMM, parseUnits(amountB, 6)] });
+      approveBWrite({ address: CONTRACT_ADDRESSES.mEURC as `0x${string}`, abi: ERC20_ABI, functionName: 'approve', args: [CONTRACT_ADDRESSES.AMM, parseUnits(amountB, 18)] });
     } else {
       addWrite({
         address: CONTRACT_ADDRESSES.AMM as `0x${string}`,
         abi: AMM_ABI,
         functionName: 'addLiquidity',
-        args: [parseUnits(amountA, 18), parseUnits(amountB, 6)],
+        args: [parseUnits(amountA, 6), parseUnits(amountB, 18)],
       });
     }
   };
@@ -141,8 +141,8 @@ export const PoolsPanel = () => {
     </div>
   );
 
-  const resA = reserves ? formatUnits((reserves as any)[0], 18) : '0';
-  const resB = reserves ? formatUnits((reserves as any)[1], 6) : '0';
+  const resA = reserves ? formatUnits((reserves as any)[0], 6) : '0';
+  const resB = reserves ? formatUnits((reserves as any)[1], 18) : '0';
   const userLP = userLiquidity ? formatUnits(userLiquidity as bigint, 18) : '0';
   const share = poolShare ? (Number(poolShare) / 10000).toFixed(4) : '0';
 
@@ -168,8 +168,8 @@ export const PoolsPanel = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <StatBox label="Total Reserve A" value={`${Number(resA).toLocaleString()} mEURC`} icon={Layers} color="text-blue-500" />
-            <StatBox label="Total Reserve B" value={`${Number(resB).toLocaleString()} mUSDC`} icon={Layers} color="text-emerald-500" />
+            <StatBox label="Total Reserve A" value={`${Number(resA).toLocaleString()} mUSDC`} icon={Layers} color="text-emerald-500" />
+            <StatBox label="Total Reserve B" value={`${Number(resB).toLocaleString()} mEURC`} icon={Layers} color="text-blue-500" />
             <StatBox label="Pool Volume (24h)" value="$142,500" icon={TrendingUp} color="text-purple-500" />
           </div>
 
@@ -216,11 +216,11 @@ export const PoolsPanel = () => {
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center px-1">
                    <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Input Amount A</span>
-                   <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Bal: {balanceA ? Number(formatUnits(balanceA as bigint, 18)).toFixed(2) : '0'}</span>
+                   <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Bal: {balanceA ? Number(formatUnits(balanceA as bigint, 6)).toFixed(2) : '0'}</span>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
                   <input type="number" value={amountA} onChange={(e) => setAmountA(e.target.value)} placeholder="0.00" className="bg-transparent text-xl font-bold text-white outline-none w-full" />
-                  <span className="text-xs font-bold text-white/40 ml-2">mEURC</span>
+                  <span className="text-xs font-bold text-white/40 ml-2">mUSDC</span>
                 </div>
               </div>
 
@@ -233,11 +233,11 @@ export const PoolsPanel = () => {
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center px-1">
                    <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Input Amount B</span>
-                   <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Bal: {balanceB ? Number(formatUnits(balanceB as bigint, 6)).toFixed(2) : '0'}</span>
+                   <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Bal: {balanceB ? Number(formatUnits(balanceB as bigint, 18)).toFixed(2) : '0'}</span>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
                   <input type="number" value={amountB} onChange={(e) => setAmountB(e.target.value)} placeholder="0.00" className="bg-transparent text-xl font-bold text-white outline-none w-full" />
-                  <span className="text-xs font-bold text-white/40 ml-2">mUSDC</span>
+                  <span className="text-xs font-bold text-white/40 ml-2">mEURC</span>
                 </div>
               </div>
 
@@ -251,7 +251,7 @@ export const PoolsPanel = () => {
                     <Loader2 size={14} className="animate-spin" />
                     <span>Processing...</span>
                   </div>
-                ) : needsApproveA ? "Approve mEURC" : needsApproveB ? "Approve mUSDC" : "Add Liquidity"}
+                ) : needsApproveA ? "Approve mUSDC" : needsApproveB ? "Approve mEURC" : "Add Liquidity"}
               </button>
             </div>
           ) : (
