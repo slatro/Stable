@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// Vercel Rebuild Trigger - ArcFX Deployment Sync
+import React, { useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { SwapCard } from "./components/SwapCard";
 import { TradingViewChart as PriceChart } from "./components/PriceChart";
