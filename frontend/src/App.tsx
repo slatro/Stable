@@ -7,6 +7,7 @@ import { TransactionPanel } from "./components/TransactionPanel";
 import { Logo } from "./components/Logo";
 import { ActivityTicker } from "./components/ActivityTicker";
 import { InvoiceForm } from "./components/InvoiceForm";
+import { PoolsPanel } from "./components/PoolsPanel";
 import { Zap } from "lucide-react";
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -94,6 +95,8 @@ export default function App() {
           </div>
         ) : activeTab === 'invoices' ? (
           <InvoiceForm />
+        ) : activeTab === 'pools' ? (
+          <PoolsPanel />
         ) : (
           <div className="flex items-center justify-center h-64 text-white/20 uppercase tracking-[0.5em] font-black italic">
             Coming Soon
