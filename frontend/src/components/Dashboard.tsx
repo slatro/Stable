@@ -110,7 +110,7 @@ export const Dashboard = () => {
           </button>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           {[
             { symbol: 'mUSDC', balance: balanceUSDC, dec: 6, color: 'text-emerald-400', bg: 'bg-emerald-500/20', addr: CONTRACT_ADDRESSES.mUSDC },
             { symbol: 'mEURC', balance: balanceEURC, dec: 18, color: 'text-blue-400', bg: 'bg-blue-500/20', addr: CONTRACT_ADDRESSES.mEURC },
@@ -118,18 +118,20 @@ export const Dashboard = () => {
             { symbol: 'mGBPC', balance: balanceGBPC, dec: 18, color: 'text-purple-400', bg: 'bg-purple-500/20', addr: CONTRACT_ADDRESSES.mGBPC },
             { symbol: 'mJPYC', balance: balanceJPYC, dec: 18, color: 'text-orange-400', bg: 'bg-orange-500/20', addr: CONTRACT_ADDRESSES.mJPYC },
           ].map((token) => (
-            <div key={token.symbol} className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-blue-500/30 transition-all group">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-lg ${token.bg} flex items-center justify-center ${token.color} text-[10px] font-bold`}>{token.symbol[1]}</div>
+            <div key={token.symbol} className="bg-white/5 border border-white/10 rounded-xl p-3 hover:border-blue-500/30 transition-all group flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-lg ${token.bg} flex items-center justify-center ${token.color} text-[10px] font-bold`}>{token.symbol[1]}</div>
+                <div className="flex flex-col">
                   <span className="text-xs font-bold text-white/80">{token.symbol}</span>
+                  <button onClick={() => addTokenToWallet(token.addr, token.symbol, token.dec)} className="text-[9px] text-white/20 hover:text-white flex items-center gap-1 mt-0.5">
+                    <PlusCircle size={8} /> Add to Wallet
+                  </button>
                 </div>
-                <button onClick={() => addTokenToWallet(token.addr, token.symbol, token.dec)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white" title="Add to Metamask">
-                  <PlusCircle size={14} />
-                </button>
               </div>
-              <div className="text-xl font-black text-white tracking-tight">
-                {token.balance ? Number(formatUnits(token.balance as bigint, token.dec)).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
+              <div className="text-right flex flex-col items-end">
+                <div className="text-sm font-black text-white tracking-tight">
+                  {token.balance ? Number(formatUnits(token.balance as bigint, token.dec)).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
+                </div>
               </div>
             </div>
           ))}
