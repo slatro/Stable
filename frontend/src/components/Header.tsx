@@ -2,20 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { Logo } from './Logo';
 import { useAccount, useDisconnect, useSwitchChain } from 'wagmi';
 import { WalletModal } from './WalletModal';
+import { NetworkInfoModal } from './NetworkInfoModal';
 import { ARC_TESTNET_CONFIG } from '../config/contracts';
 
 export const Header = () => {
   const { address, isConnected, chainId } = useAccount();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   // Auto-switch to Arc Testnet if connected to wrong network
   useEffect(() => {
     if (isConnected && chainId !== ARC_TESTNET_CONFIG.chainId) {
-      switchChain({ chainId: ARC_TESTNET_CONFIG.chainId });
+      // Small delay to ensure the wallet has finished connecting
+      const timer = setTimeout(() => {
+        switchChain({ chainId: ARC_TESTNET_CONFIG.chainId });
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [isConnected, chainId, switchChain]);
+
+  const handleConnectClick = () => {
+    if (isConnected) {
+      disconnect();
+    } else {
+      setIsNetworkModalOpen(true);
+    }
+  };
+
+  const handleNetworkConfirm = () => {
+    setIsNetworkModalOpen(false);
+    setIsWalletModalOpen(true);
+  };
 
   return (
     <>
@@ -37,7 +56,7 @@ export const Header = () => {
           </div>
           
           <button 
-            onClick={() => isConnected ? disconnect() : setIsModalOpen(true)}
+            onClick={handleConnectClick}
             className={`h-11 px-6 rounded-2xl text-xs font-bold transition-all duration-300 border ${
               isConnected 
                 ? "bg-white/5 text-white border-white/10 hover:bg-white/10" 
@@ -49,7 +68,16 @@ export const Header = () => {
         </div>
       </header>
 
-      <WalletModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <NetworkInfoModal 
+        isOpen={isNetworkModalOpen} 
+        onClose={() => setIsNetworkModalOpen(false)} 
+        onConfirm={handleNetworkConfirm}
+      />
+      
+      <WalletModal 
+        isOpen={isWalletModalOpen} 
+        onClose={() => setIsWalletModalOpen(false)} 
+      />
     </>
   );
 };
