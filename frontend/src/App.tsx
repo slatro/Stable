@@ -50,7 +50,7 @@ export default function App() {
           
           <div className="flex flex-col items-center order-1 xl:order-2">
             <SwapCard slippage={slippage} setSlippage={setSlippage} />
-            <div className="flex items-center h-[28px] gap-4 px-1 mt-[5px] text-[9px] font-bold text-white/20 uppercase tracking-widest">
+            <div className="flex items-center h-[26px] gap-4 px-1 mt-1 py-1.5 text-[9px] font-bold text-white/20 uppercase tracking-widest">
               <div className="flex items-center gap-2">
                 <span>Slippage Tolerance</span>
                 <span className="text-blue-400" style={{ color: '#FDF5E6' }}>{slippage}%</span>
