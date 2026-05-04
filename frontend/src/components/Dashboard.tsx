@@ -8,7 +8,7 @@ import ERC20_ABI from '../abis/ERC20.json';
 
 const TOKEN_ICONS: Record<string, string> = {
   mUSDC: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/usdc.png',
-  mEURC: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eurc.png',
+  mEURC: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/eur.png',
   mTRYC: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/try.png',
   mGBPC: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/gbp.png',
   mJPYC: 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/jpy.png',
