@@ -6,12 +6,19 @@ import { TransactionPanel } from "./components/TransactionPanel";
 import { Logo } from "./components/Logo";
 import { ActivityTicker } from "./components/ActivityTicker";
 import { Zap } from "lucide-react";
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { config } from './config/wagmi';
+
+const queryClient = new QueryClient();
 
 export default function App() {
   const [slippage, setSlippage] = useState('3.00');
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-white/10 relative">
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen flex flex-col selection:bg-white/10 relative">
       <div className="bg-arcs">
         <svg className="w-full h-full" viewBox="0 0 1000 1000" preserveAspectRatio="none" fill="none">
           <path id="snake-path-1" className="arc-line" d="M -100 200 C 200 100, 400 900, 700 500 S 1200 800, 1500 200" stroke="white" strokeWidth="0.6" style={{ animationDuration: '14s' }} />
@@ -103,5 +110,7 @@ export default function App() {
         </div>
       </footer>
     </div>
+    </QueryClientProvider>
+    </WagmiProvider>
   );
 }
