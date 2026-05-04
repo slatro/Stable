@@ -98,13 +98,13 @@ export default function App() {
           <InvoiceForm />
         ) : activeTab === 'pools' ? (
           <PoolsPanel />
+        ) : activeTab === 'dashboard' ? (
+          <Dashboard />
         ) : (
           <div className="flex items-center justify-center h-64 text-white/20 uppercase tracking-[0.5em] font-black italic">
             Coming Soon
           </div>
         )}
-
-        <Dashboard />
 
         {activeTab === 'swap' && (
           <div className="w-full max-w-[1600px] mt-8 md:mt-12 overflow-hidden">

@@ -63,6 +63,12 @@ export const Header = ({ activeTab = 'swap', setActiveTab }: HeaderProps) => {
               Swap
             </button>
             <button 
+              onClick={() => setActiveTab?.('dashboard')}
+              className={`nav-link ${activeTab === 'dashboard' ? 'active text-white' : 'text-white/40'}`}
+            >
+              Dashboard
+            </button>
+            <button 
               onClick={() => setActiveTab?.('pools')}
               className={`nav-link ${activeTab === 'pools' ? 'active text-white' : 'text-white/40'}`}
             >
