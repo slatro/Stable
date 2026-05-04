@@ -66,8 +66,9 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
 
   return (
     <>
-      <header className="fixed top-0 left-0 w-full z-50 px-6 py-4 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-12 pointer-events-auto">
+      <header className="fixed top-0 left-0 w-full z-50 px-6 py-4 flex items-center justify-between">
+        {/* Left Side: Logo & Navigation */}
+        <div className="flex items-center gap-8">
           <Logo />
           
           <nav className="flex items-center p-1 bg-white/[0.03] border border-white/5 backdrop-blur-md rounded-2xl">
@@ -87,31 +88,33 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
           </nav>
         </div>
 
-        <div className="flex items-center gap-4 pointer-events-auto">
-          <div className="hidden lg:flex items-center gap-6 mr-4">
-            {/* USDC FAUCET BUTTON */}
-            <button 
-              onClick={handleFaucet}
-              disabled={isMintPending || isConfirming || !isConnected}
-              className="group relative flex items-center gap-2 px-4 py-2 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-all duration-500 hover:scale-105 active:scale-95 disabled:opacity-20 shadow-[0_0_15px_rgba(59,130,246,0.2)] hover:shadow-[0_0_25px_rgba(59,130,246,0.4)]"
-            >
-              <div className="absolute inset-0 bg-blue-400/5 blur-xl group-hover:bg-blue-400/10 transition-all" />
-              {isMintPending || isConfirming ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} className="animate-pulse" />}
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">USDC Faucet</span>
-            </button>
+        {/* Right Side: Faucet, Network, Wallet */}
+        <div className="flex items-center gap-6">
+          {/* USDC FAUCET */}
+          <button 
+            onClick={handleFaucet}
+            disabled={isMintPending || isConfirming || !isConnected}
+            className="group relative flex items-center gap-2 px-4 py-2 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-all duration-500 hover:scale-105 active:scale-95 disabled:opacity-20 shadow-[0_0_15px_rgba(59,130,246,0.2)] hover:shadow-[0_0_25px_rgba(59,130,246,0.4)]"
+          >
+            <div className="absolute inset-0 bg-blue-400/5 blur-xl group-hover:bg-blue-400/10 transition-all pointer-events-none" />
+            {isMintPending || isConfirming ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} className="animate-pulse" />}
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">USDC Faucet</span>
+          </button>
 
-            <div className="flex items-center gap-6 opacity-40 hover:opacity-100 transition-opacity ml-2">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-                <span className="text-[9px] font-bold text-white uppercase tracking-widest">Network: <span className="text-white/80">Arc Testnet</span></span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={12} className="text-emerald-500" />
-                <span className="text-[9px] font-bold text-white uppercase tracking-widest">Secure Layer</span>
-              </div>
+          {/* Network Indicator */}
+          <div className="hidden xl:flex items-center gap-6 px-4 py-2 bg-white/[0.02] border border-white/5 rounded-2xl backdrop-blur-md">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+              <span className="text-[9px] font-bold text-white uppercase tracking-widest">Network: <span className="text-white/80">Arc Testnet</span></span>
+            </div>
+            <div className="h-4 w-px bg-white/10" />
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={12} className="text-emerald-500" />
+              <span className="text-[9px] font-bold text-white uppercase tracking-widest">Secure Layer</span>
             </div>
           </div>
 
+          {/* Wallet Button */}
           {!isConnected ? (
             <button 
               onClick={() => connect({ connector: connectors[0] })}
