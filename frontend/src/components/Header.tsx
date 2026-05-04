@@ -46,7 +46,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
 
   return (
     <>
-      <header className="fixed top-0 left-0 w-full z-50 px-8 py-5 grid grid-cols-3 items-center">
+      <header className="w-full z-50 px-8 py-5 grid grid-cols-3 items-center">
         {/* LEFT: Logo */}
         <div className="flex justify-start items-center">
           <Logo />

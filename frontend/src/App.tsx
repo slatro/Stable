@@ -36,42 +36,41 @@ export default function App() {
         <div className="orb orb-2" />
       </div>
       
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
-      
-      <div className="bg-white/[0.02] border-b border-white/[0.05] py-2 px-4 md:px-6 relative overflow-hidden">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4 md:gap-8">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center gap-2 px-2 py-0.5 rounded-[12px] bg-blue-500/10 border border-blue-500/20">
-              <Zap size={10} className="text-blue-400" />
-              <span className="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest">v2.0 Active</span>
+      {/* FIXED TOP NAVIGATION AREA */}
+      <div className="fixed top-0 left-0 w-full z-50 flex flex-col">
+        <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+        
+        {/* ACTIVITY TICKER BAR */}
+        <div className="bg-[#0a0a0b]/80 backdrop-blur-md border-b border-white/[0.05] py-2 px-6 relative overflow-hidden">
+          <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-8">
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2 px-2 py-0.5 rounded-[12px] bg-blue-500/10 border border-blue-500/20">
+                <Zap size={10} className="text-blue-400" />
+                <span className="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest">v2.0 Active</span>
+              </div>
+              <span className="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em] hidden md:block">Settlement Protocol</span>
             </div>
-            <span className="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em] hidden md:block">Settlement Protocol</span>
-          </div>
-          <div className="flex-1 overflow-hidden pointer-events-none">
-            <ActivityTicker isMinimal />
-          </div>
-          <div className="flex items-center gap-3 bg-white/[0.03] px-3 py-1.5 rounded-xl border border-white/[0.05] shrink-0">
-            <img src="/assets/logo-final.png" alt="Arc" className="w-4 h-4 mix-blend-screen" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 hidden sm:block">Arc Ecosystem</span>
+            <div className="flex-1 overflow-hidden pointer-events-none">
+              <ActivityTicker isMinimal />
+            </div>
+            <div className="flex items-center gap-3 bg-white/[0.03] px-3 py-1.5 rounded-xl border border-white/[0.05] shrink-0">
+              <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 hidden sm:block">Arc Ecosystem</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col items-center relative py-4 md:py-8 px-4 md:px-6">
+      {/* MAIN CONTENT WITH TOP SPACING FOR FIXED HEADER/TICKER */}
+      <main className="flex-1 flex flex-col items-center relative pt-[140px] pb-8 px-4 md:px-6">
         {activeTab === 'swap' ? (
           <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-6 md:gap-8 items-stretch animate-in fade-in duration-700">
             
             <div className="flex flex-col items-center gap-4 order-1 xl:order-2">
               <SwapCard slippage={slippage} setSlippage={setSlippage} />
-              <a 
-                href="https://faucet.circle.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-1.5 mt-[9px] rounded-xl bg-blue-500/5 border border-blue-500/20 hover:bg-blue-500/10 transition-all cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.15)] group"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-                <span className="text-[9px] font-bold text-blue-400/80 uppercase tracking-widest group-hover:text-blue-400 transition-colors">Faucet</span>
-              </a>
+              <div className="h-[2px] w-full" /> {/* Spacer */}
             </div>
 
             <div className="flex flex-col gap-4 order-2 xl:order-1">
