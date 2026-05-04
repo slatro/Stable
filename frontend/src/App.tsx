@@ -50,17 +50,15 @@ export default function App() {
           
           <div className="flex flex-col items-center gap-4 order-1 xl:order-2">
             <SwapCard slippage={slippage} setSlippage={setSlippage} />
-            <div className="flex items-center h-[26px] gap-4 px-1 mt-1 py-1.5 text-[9px] font-bold text-white/20 uppercase tracking-widest">
-              <div className="flex items-center gap-2">
-                <span>Slippage Tolerance</span>
-                <span className="text-blue-400" style={{ color: '#FDF5E6' }}>{slippage}%</span>
-              </div>
-              <div className="w-px h-3 bg-white/10" />
-              <div className="flex items-center gap-2">
-                <span>Network Fee</span>
-                <span className="text-white/40">~$0.12</span>
-              </div>
-            </div>
+            <a 
+              href="https://faucet.circle.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-1.5 mt-[9px] rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] transition-all cursor-pointer"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Faucet</span>
+            </a>
           </div>
 
           <div className="flex flex-col gap-4 order-2 xl:order-1">
