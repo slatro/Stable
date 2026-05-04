@@ -1,7 +1,7 @@
 import React from 'react';
-import { Wallet, History, ExternalLink, PlusCircle, ShieldCheck, Globe, Activity } from 'lucide-react';
+import { Wallet, History, ExternalLink, PlusCircle, ShieldCheck, Globe, Activity, Zap, Loader2, ArrowRight } from 'lucide-react';
 import { Logo } from './Logo';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { formatUnits } from 'viem';
 import { CONTRACT_ADDRESSES } from '../config/contracts';
 import ERC20_ABI from '../abis/ERC20.json';
@@ -9,7 +9,8 @@ import ERC20_ABI from '../abis/ERC20.json';
 export const Dashboard = () => {
   const { address, isConnected } = useAccount();
 
-  const { data: balanceUSDC } = useReadContract({
+  // 1. Balances
+  const { data: balanceUSDC, refetch: refetchUSDC } = useReadContract({
     address: CONTRACT_ADDRESSES.mUSDC as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
@@ -17,13 +18,61 @@ export const Dashboard = () => {
     query: { enabled: !!address }
   });
 
-  const { data: balanceEURC } = useReadContract({
+  const { data: balanceEURC, refetch: refetchEURC } = useReadContract({
     address: CONTRACT_ADDRESSES.mEURC as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     query: { enabled: !!address }
   });
+
+  const { data: balanceTRY, refetch: refetchTRY } = useReadContract({
+    address: (CONTRACT_ADDRESSES as any).mTRY as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address }
+  });
+
+  const { data: balanceGBP, refetch: refetchGBP } = useReadContract({
+    address: (CONTRACT_ADDRESSES as any).mGBP as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address }
+  });
+
+  // 2. Faucet Writes
+  const { data: mintHash, writeContract: mintWrite, isPending: isMintPending } = useWriteContract();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash: mintHash });
+
+  React.useEffect(() => {
+    if (isConfirmed) {
+      refetchUSDC();
+      refetchEURC();
+      refetchTRY();
+      refetchGBP();
+    }
+  }, [isConfirmed]);
+
+  const handleFaucet = async () => {
+    if (!address) return;
+    const tokens = [
+      { addr: CONTRACT_ADDRESSES.mUSDC, dec: 6 },
+      { addr: CONTRACT_ADDRESSES.mEURC, dec: 18 },
+      { addr: (CONTRACT_ADDRESSES as any).mTRY, dec: 18 },
+      { addr: (CONTRACT_ADDRESSES as any).mGBP, dec: 18 },
+    ];
+
+    for (const token of tokens) {
+      mintWrite({
+        address: token.addr as `0x${string}`,
+        abi: ERC20_ABI,
+        functionName: 'mint',
+        args: [address, BigInt(10000 * 10**token.dec)],
+      });
+    }
+  };
 
   const addTokenToWallet = async (address: string, symbol: string, decimals: number) => {
     try {
@@ -36,7 +85,6 @@ export const Dashboard = () => {
             address,
             symbol,
             decimals,
-            image: `https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/${symbol.slice(1).toLowerCase()}.png`,
           },
         },
       });
@@ -52,7 +100,7 @@ export const Dashboard = () => {
   ];
 
   return (
-    <div className="w-full max-w-5xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+    <div className="w-full max-w-5xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 pb-20">
       {/* WALLET ASSETS */}
       <div className="premium-card p-6 flex flex-col gap-6">
         <div className="flex items-center justify-between">
@@ -60,49 +108,42 @@ export const Dashboard = () => {
             <Wallet size={16} className="text-blue-400" />
             <h3 className="text-[11px] font-bold text-white uppercase tracking-widest">My Assets</h3>
           </div>
-          <span className="text-[9px] font-black text-white/20 uppercase tracking-tighter">Live Balance</span>
+          <button 
+            onClick={handleFaucet}
+            disabled={isMintPending || isConfirming || !isConnected}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all text-[9px] font-bold uppercase tracking-widest disabled:opacity-20"
+          >
+            {isMintPending || isConfirming ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+            Get Test Tokens
+          </button>
         </div>
 
         <div className="flex flex-col gap-3">
-          {/* mUSDC */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-blue-500/30 transition-all group">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-[10px] font-bold">U</div>
-                <span className="text-xs font-bold text-white/80">mUSDC</span>
+          {[
+            { symbol: 'mUSDC', balance: balanceUSDC, dec: 6, color: 'text-emerald-400', bg: 'bg-emerald-500/20', addr: CONTRACT_ADDRESSES.mUSDC },
+            { symbol: 'mEURC', balance: balanceEURC, dec: 18, color: 'text-blue-400', bg: 'bg-blue-500/20', addr: CONTRACT_ADDRESSES.mEURC },
+            { symbol: 'mTRY', balance: balanceTRY, dec: 18, color: 'text-red-400', bg: 'bg-red-500/20', addr: (CONTRACT_ADDRESSES as any).mTRY },
+            { symbol: 'mGBP', balance: balanceGBP, dec: 18, color: 'text-purple-400', bg: 'bg-purple-500/20', addr: (CONTRACT_ADDRESSES as any).mGBP },
+          ].map((token) => (
+            <div key={token.symbol} className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-blue-500/30 transition-all group">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-6 h-6 rounded-lg ${token.bg} flex items-center justify-center ${token.color} text-[10px] font-bold`}>{token.symbol[1]}</div>
+                  <span className="text-xs font-bold text-white/80">{token.symbol}</span>
+                </div>
+                <button 
+                  onClick={() => addTokenToWallet(token.addr, token.symbol, token.dec)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white"
+                  title="Add to Metamask"
+                >
+                  <PlusCircle size={14} />
+                </button>
               </div>
-              <button 
-                onClick={() => addTokenToWallet(CONTRACT_ADDRESSES.mUSDC, 'mUSDC', 6)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white"
-                title="Add to Metamask"
-              >
-                <PlusCircle size={14} />
-              </button>
-            </div>
-            <div className="text-xl font-black text-white tracking-tight">
-              {balanceUSDC ? Number(formatUnits(balanceUSDC as bigint, 6)).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
-            </div>
-          </div>
-
-          {/* mEURC */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 hover:border-blue-500/30 transition-all group">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 text-[10px] font-bold">E</div>
-                <span className="text-xs font-bold text-white/80">mEURC</span>
+              <div className="text-xl font-black text-white tracking-tight">
+                {token.balance ? Number(formatUnits(token.balance as bigint, token.dec)).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
               </div>
-              <button 
-                onClick={() => addTokenToWallet(CONTRACT_ADDRESSES.mEURC, 'mEURC', 18)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white"
-                title="Add to Metamask"
-              >
-                <PlusCircle size={14} />
-              </button>
             </div>
-            <div className="text-xl font-black text-white tracking-tight">
-              {balanceEURC ? Number(formatUnits(balanceEURC as bigint, 18)).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -173,19 +214,3 @@ export const Dashboard = () => {
     </div>
   );
 };
-
-const ArrowRight = ({ size, className }: { size: number, className?: string }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M5 12h14M12 5l7 7-7 7"/>
-  </svg>
-);
