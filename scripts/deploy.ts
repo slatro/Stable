@@ -44,51 +44,53 @@ async function main() {
   // 3. Deploy AMMs (Pools)
   const ArcFXAMM = await ethers.getContractFactory("ArcFXAMM");
   
-  // Pool 1: USDC/EURC
   const ammEUR = await ArcFXAMM.deploy(usdcAddr, eurcAddr, deployer.address);
-  await ammEUR.waitForDeployment();
-  const ammEURAddr = await ammEUR.getAddress();
-
-  // Pool 2: USDC/TRYC
   const ammTRY = await ArcFXAMM.deploy(usdcAddr, trycAddr, deployer.address);
-  await ammTRY.waitForDeployment();
-  const ammTRYAddr = await ammTRY.getAddress();
-
-  // Pool 3: USDC/GBPC
   const ammGBP = await ArcFXAMM.deploy(usdcAddr, gbpcAddr, deployer.address);
-  await ammGBP.waitForDeployment();
-  const ammGBPAddr = await ammGBP.getAddress();
-
-  // Pool 4: USDC/JPYC
   const ammJPY = await ArcFXAMM.deploy(usdcAddr, jpycAddr, deployer.address);
-  await ammJPY.waitForDeployment();
+  
+  await Promise.all([
+    ammEUR.waitForDeployment(),
+    ammTRY.waitForDeployment(),
+    ammGBP.waitForDeployment(),
+    ammJPY.waitForDeployment()
+  ]);
+
+  const ammEURAddr = await ammEUR.getAddress();
+  const ammTRYAddr = await ammTRY.getAddress();
+  const ammGBPAddr = await ammGBP.getAddress();
   const ammJPYAddr = await ammJPY.getAddress();
 
-  // 4. Mint (10M for each)
-  console.log("Minting tokens...");
-  await (await usdc.mint(deployer.address, ethers.parseUnits("10000000", 6))).wait();
-  await (await eurc.mint(deployer.address, ethers.parseUnits("10000000", 18))).wait();
-  await (await tryc.mint(deployer.address, ethers.parseUnits("10000000", 18))).wait();
-  await (await gbpc.mint(deployer.address, ethers.parseUnits("10000000", 18))).wait();
-  await (await jpyc.mint(deployer.address, ethers.parseUnits("10000000", 18))).wait();
+  // 4. Mint huge amounts for deep liquidity (1 Billion each)
+  console.log("Minting huge amounts for deep liquidity...");
+  await (await usdc.mint(deployer.address, ethers.parseUnits("1000000000", 6))).wait();
+  await (await eurc.mint(deployer.address, ethers.parseUnits("1000000000", 18))).wait();
+  await (await tryc.mint(deployer.address, ethers.parseUnits("1000000000", 18))).wait();
+  await (await gbpc.mint(deployer.address, ethers.parseUnits("1000000000", 18))).wait();
+  await (await jpyc.mint(deployer.address, ethers.parseUnits("1000000000", 18))).wait();
 
-  // 5. Initial Liquidity
-  console.log("Adding liquidity with real market parities...");
-  await (await usdc.approve(ammEURAddr, ethers.parseUnits("10000", 6))).wait();
-  await (await eurc.approve(ammEURAddr, ethers.parseUnits("8547", 18))).wait();
-  await (await ammEUR.addLiquidity(ethers.parseUnits("10000", 6), ethers.parseUnits("8547", 18))).wait();
+  // 5. Initial Liquidity (1 MILLION USD PER POOL)
+  console.log("Adding 1 Million USD liquidity per pool for stable prices...");
 
-  await (await usdc.approve(ammTRYAddr, ethers.parseUnits("10000", 6))).wait();
-  await (await tryc.approve(ammTRYAddr, ethers.parseUnits("451400", 18))).wait();
-  await (await ammTRY.addLiquidity(ethers.parseUnits("10000", 6), ethers.parseUnits("451400", 18))).wait();
+  // EUR Pool (1M USDC / 854.7k EURC) - 1 EUR = 1.17 USD
+  await (await usdc.approve(ammEURAddr, ethers.parseUnits("1000000", 6))).wait();
+  await (await eurc.approve(ammEURAddr, ethers.parseUnits("854700", 18))).wait();
+  await (await ammEUR.addLiquidity(ethers.parseUnits("1000000", 6), ethers.parseUnits("854700", 18))).wait();
 
-  await (await usdc.approve(ammGBPAddr, ethers.parseUnits("10000", 6))).wait();
-  await (await gbpc.approve(ammGBPAddr, ethers.parseUnits("7407", 18))).wait();
-  await (await ammGBP.addLiquidity(ethers.parseUnits("10000", 6), ethers.parseUnits("7407", 18))).wait();
+  // TRYC Pool (1M USDC / 45.14M TRYC) - 1 USD = 45.14 TRY
+  await (await usdc.approve(ammTRYAddr, ethers.parseUnits("1000000", 6))).wait();
+  await (await tryc.approve(ammTRYAddr, ethers.parseUnits("45140000", 18))).wait();
+  await (await ammTRY.addLiquidity(ethers.parseUnits("1000000", 6), ethers.parseUnits("45140000", 18))).wait();
 
-  await (await usdc.approve(ammJPYAddr, ethers.parseUnits("10000", 6))).wait();
-  await (await jpyc.approve(ammJPYAddr, ethers.parseUnits("1569500", 18))).wait();
-  await (await ammJPY.addLiquidity(ethers.parseUnits("10000", 6), ethers.parseUnits("1569500", 18))).wait();
+  // GBPC Pool (1M USDC / 740.7k GBPC) - 1 GBP = 1.35 USD
+  await (await usdc.approve(ammGBPAddr, ethers.parseUnits("1000000", 6))).wait();
+  await (await gbpc.approve(ammGBPAddr, ethers.parseUnits("740700", 18))).wait();
+  await (await ammGBP.addLiquidity(ethers.parseUnits("1000000", 6), ethers.parseUnits("740700", 18))).wait();
+
+  // JPYC Pool (1M USDC / 156.95M JPYC) - 1 USD = 156.95 JPY
+  await (await usdc.approve(ammJPYAddr, ethers.parseUnits("1000000", 6))).wait();
+  await (await jpyc.approve(ammJPYAddr, ethers.parseUnits("156950000", 18))).wait();
+  await (await ammJPY.addLiquidity(ethers.parseUnits("1000000", 6), ethers.parseUnits("156950000", 18))).wait();
 
   // 6. Save config
   const configContent = `
@@ -120,7 +122,7 @@ export const CONTRACT_ADDRESSES = {
 
   const configPath = path.join(__dirname, "../frontend/src/config/contracts.ts");
   fs.writeFileSync(configPath, configContent);
-  console.log("Deployment complete! MultiFaucet is active.");
+  console.log("Deployment complete! Liquidity is now deep.");
 }
 
 main().catch(console.error);

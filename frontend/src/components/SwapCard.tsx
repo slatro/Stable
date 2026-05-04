@@ -22,15 +22,69 @@ const TOKENS = [
   { symbol: 'mJPYC', name: 'Arc Yen', decimals: 18, addr: CONTRACT_ADDRESSES.mJPYC },
 ];
 
+// TokenBox moved outside to prevent re-creation and focus loss
+const TokenBox = ({ type, amount, setAmount, token, isReadOnly, balance }: any) => {
+  const formattedBalance = balance ? parseFloat(formatUnits(balance as bigint, token.decimals)).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00';
+
+  return (
+    <div className="flex flex-col gap-1.5 mb-1">
+      <div className="flex justify-between items-center px-1">
+        <div className="flex items-center gap-2 text-[9px] font-bold text-white/30 uppercase tracking-wider">
+          <Wallet size={10} className="text-blue-400/50" />
+          <span>Balance: {formattedBalance} {token.symbol}</span>
+        </div>
+        {!isReadOnly && parseFloat(formattedBalance.replace(/,/g, '')) > 0 && (
+          <button 
+            onClick={() => setAmount(formatUnits(balance as bigint, token.decimals))}
+            className="text-[9px] font-bold text-blue-400 hover:text-white transition-colors uppercase"
+          >
+            Max
+          </button>
+        )}
+      </div>
+      
+      <div className="bg-white/5 border border-white/[0.08] backdrop-blur-md rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.08] transition-all group border-transparent focus-within:border-blue-500/30">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-white/5 p-1 flex items-center justify-center shadow-lg shadow-black/40 relative overflow-hidden">
+             <img src={TOKEN_ICONS[token.symbol]} alt={token.symbol} className="w-full h-full object-contain" />
+          </div>
+          <div className="text-left relative">
+            <div className="text-base font-bold text-white pr-4 flex items-center gap-1">
+              {token.symbol}
+              <ChevronDown size={12} className="text-white/20" />
+            </div>
+            <div className="text-[9px] font-medium text-white/20 uppercase tracking-tighter">{token.name}</div>
+          </div>
+        </div>
+
+        <div className="text-right">
+          <input 
+            type="number" 
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            readOnly={isReadOnly}
+            placeholder="0.00"
+            className={`bg-transparent text-2xl font-bold text-white text-right outline-none w-32 placeholder-white/5 ${isReadOnly ? 'opacity-60 cursor-default' : 'cursor-text'}`}
+          />
+          {isReadOnly && (
+            <div className="text-[9px] font-medium text-white/10 uppercase tracking-widest mt-1">Estimated Output</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlippage: (val: string) => void }) => {
   const { address, isConnected } = useAccount();
 
   useEffect(() => {
     document.title = 'Swap | ArcFX Protocol';
   }, []);
+
   const [fromAmount, setFromAmount] = useState('0');
-  const [tokenIn, setTokenIn] = useState(TOKENS[1]); // Default EURC
-  const [tokenOut, setTokenOut] = useState(TOKENS[0]); // Default USDC
+  const [tokenIn, setTokenIn] = useState(TOKENS[1]); 
+  const [tokenOut, setTokenOut] = useState(TOKENS[0]); 
   const [isEditingSlippage, setIsEditingSlippage] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -117,56 +171,6 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
     setFromAmount('0');
   };
 
-  const TokenBox = ({ type, amount, setAmount, token, isReadOnly, balance }: any) => {
-    const formattedBalance = balance ? parseFloat(formatUnits(balance as bigint, token.decimals)).toFixed(2) : '0.00';
-
-    return (
-      <div className="flex flex-col gap-1.5 mb-1">
-        <div className="flex justify-between items-center px-1">
-          <div className="flex items-center gap-2 text-[9px] font-bold text-white/30 uppercase tracking-wider">
-            <Wallet size={10} className="text-blue-400/50" />
-            <span>Balance: {formattedBalance} {token.symbol}</span>
-          </div>
-          {!isReadOnly && parseFloat(formattedBalance) > 0 && (
-            <button onClick={() => setAmount(formatUnits(balance as bigint, token.decimals))} className="text-[9px] font-bold text-blue-400 hover:text-white transition-colors uppercase">Max</button>
-          )}
-        </div>
-        
-        <div className="bg-white/5 border border-white/[0.08] backdrop-blur-md rounded-2xl p-4 flex items-center justify-between hover:bg-white/[0.08] transition-all group border-transparent focus-within:border-blue-500/30">
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full bg-white/5 p-1 flex items-center justify-center shadow-lg shadow-black/40 relative overflow-hidden`}>
-               <img src={TOKEN_ICONS[token.symbol]} alt={token.symbol} className="w-full h-full object-contain" />
-            </div>
-            <div className="text-left relative">
-              <select 
-                value={token.symbol} 
-                onChange={(e) => {
-                  const selected = TOKENS.find(t => t.symbol === e.target.value);
-                  if (selected) {
-                    if (type === 'From') setTokenIn(selected);
-                    else setTokenOut(selected);
-                  }
-                }}
-                className="bg-transparent text-base font-bold text-white outline-none appearance-none cursor-pointer pr-4"
-              >
-                {TOKENS.map(t => (
-                  <option key={t.symbol} value={t.symbol} className="bg-black text-white">{t.symbol}</option>
-                ))}
-              </select>
-              <div className="text-[9px] font-medium text-white/20 uppercase tracking-tighter">{token.name}</div>
-              <ChevronDown size={12} className="absolute right-0 top-1 text-white/20 pointer-events-none" />
-            </div>
-          </div>
-
-          <div className="text-right">
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} readOnly={isReadOnly} placeholder="0.00" className={`bg-transparent text-2xl font-bold text-white text-right outline-none w-32 placeholder-white/5 ${isReadOnly ? 'opacity-60 cursor-default' : 'cursor-text'}`} />
-            {isReadOnly && <div className="text-[9px] font-medium text-white/10 uppercase tracking-widest mt-1">Estimated Output</div>}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const isButtonLoading = isSwapPending || isSwapConfirming || isApprovePending || isApproveConfirming;
   const noPool = !poolAddress;
 
@@ -181,14 +185,30 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
       </div>
 
       <div className="premium-card p-5 flex-1 flex flex-col justify-center relative mx-0 my-[6px]">
-        <TokenBox type="From" token={tokenIn} amount={fromAmount} setAmount={setFromAmount} isReadOnly={false} balance={balanceIn} />
+        <TokenBox 
+          type="From" 
+          token={tokenIn}
+          amount={fromAmount} 
+          setAmount={setFromAmount} 
+          isReadOnly={false} 
+          balance={balanceIn}
+        />
+        
         <div className="relative h-2 flex items-center justify-center my-4">
           <div className="absolute inset-x-0 h-px bg-white/[0.04]" />
           <button onClick={handleSwapTokens} className="z-10 w-9 h-9 rounded-full bg-[#0a0a0b] border border-white/10 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] group/swapBtn hover:border-blue-500/50">
             <ArrowUpDown size={14} className="text-white/40 group-hover/swapBtn:text-blue-400 group-hover/swapBtn:rotate-180 transition-all duration-500" />
           </button>
         </div>
-        <TokenBox type="To" token={tokenOut} amount={toAmount} setAmount={() => {}} isReadOnly={true} balance={balanceOut} />
+
+        <TokenBox 
+          type="To" 
+          token={tokenOut}
+          amount={toAmount} 
+          setAmount={() => {}} 
+          isReadOnly={true} 
+          balance={balanceOut}
+        />
       </div>
 
       <div className="premium-card p-5 flex flex-col gap-4 shrink-0">
@@ -206,7 +226,9 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
 
         <div className="flex justify-between items-center px-1">
           <div className="flex items-center gap-1.5 text-[9px] font-bold text-white/10 tracking-widest uppercase"><RefreshCw size={10} className={`text-blue-500/40 ${isRefreshing ? 'animate-spin' : ''}`} /><span>Rate Updated</span></div>
-          <div className="flex items-center gap-1 text-[9px] font-bold text-white/10 uppercase tracking-widest">Protocol Fee: <span className="text-white/30">0.05%</span></div>
+          <div className="text-[9px] font-bold text-white/10 uppercase tracking-widest">
+            Liquidity: <span className="text-white/30">Deep (Low Impact)</span>
+          </div>
         </div>
       </div>
     </div>
