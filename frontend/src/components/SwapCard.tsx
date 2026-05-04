@@ -105,7 +105,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
     <div className="flex flex-col h-[506px] w-full max-w-[480px] justify-between">
       {/* HEADER CARD */}
       <div className="premium-card p-3.5 md:p-4 flex items-center justify-center relative shrink-0">
-        <h1 className="text-base md:text-lg font-black uppercase tracking-[0.4em] text-white pl-2 text-shadow-premium">Swap</h1>
+        <h1 className="text-sm md:text-base font-black text-white pl-2 text-shadow-premium">Swap</h1>
         <button className="absolute right-4 p-1.5 rounded-xl hover:bg-white/[0.05] transition-all text-white/20 hover:text-white">
           <Settings size={18} />
         </button>
