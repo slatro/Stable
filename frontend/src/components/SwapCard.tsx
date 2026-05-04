@@ -16,8 +16,8 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
   // 1. Contract Constants
   const tokenInAddress = isSwapped ? CONTRACT_ADDRESSES.mUSDC : CONTRACT_ADDRESSES.mEURC;
   const tokenOutAddress = isSwapped ? CONTRACT_ADDRESSES.mEURC : CONTRACT_ADDRESSES.mUSDC;
-  const tokenInDecimals = isSwapped ? 6 : 18;
-  const tokenOutDecimals = isSwapped ? 18 : 6;
+  const tokenInDecimals = 10;
+  const tokenOutDecimals = 10;
   const tokenInSymbol = isSwapped ? 'mUSDC' : 'mEURC';
   const tokenOutSymbol = isSwapped ? 'mEURC' : 'mUSDC';
 
@@ -194,7 +194,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           iconColor={isSwapped ? 'bg-emerald-500' : 'bg-blue-600'} 
           isReadOnly={false} 
           balance={balanceIn}
-          decimals={isSwapped ? 6 : 18}
+          decimals={10}
         />
         
         <div className="relative h-2 flex items-center justify-center my-4">
@@ -216,7 +216,7 @@ export const SwapCard = ({ slippage, setSlippage }: { slippage: string, setSlipp
           iconColor={isSwapped ? 'bg-blue-600' : 'bg-emerald-500'} 
           isReadOnly={true} 
           balance={balanceOut}
-          decimals={isSwapped ? 18 : 6}
+          decimals={10}
         />
       </div>
 

@@ -104,20 +104,20 @@ export const PoolsPanel = () => {
   }, [isAddConfirmed, isRemoveConfirmed, isApproveAConfirmed, isApproveBConfirmed]);
 
   // Logic Helpers
-  const needsApproveA = isConnected && allowanceA !== undefined && parseFloat(amountA || '0') > 0 && (allowanceA as bigint) < parseUnits(amountA, 6);
-  const needsApproveB = isConnected && allowanceB !== undefined && parseFloat(amountB || '0') > 0 && (allowanceB as bigint) < parseUnits(amountB, 18);
+  const needsApproveA = isConnected && allowanceA !== undefined && parseFloat(amountA || '0') > 0 && (allowanceA as bigint) < parseUnits(amountA, 10);
+  const needsApproveB = isConnected && allowanceB !== undefined && parseFloat(amountB || '0') > 0 && (allowanceB as bigint) < parseUnits(amountB, 10);
 
   const handleAddLiquidity = () => {
     if (needsApproveA) {
-      approveAWrite({ address: CONTRACT_ADDRESSES.mUSDC as `0x${string}`, abi: ERC20_ABI, functionName: 'approve', args: [CONTRACT_ADDRESSES.AMM, parseUnits(amountA, 6)] });
+      approveAWrite({ address: CONTRACT_ADDRESSES.mUSDC as `0x${string}`, abi: ERC20_ABI, functionName: 'approve', args: [CONTRACT_ADDRESSES.AMM, parseUnits(amountA, 10)] });
     } else if (needsApproveB) {
-      approveBWrite({ address: CONTRACT_ADDRESSES.mEURC as `0x${string}`, abi: ERC20_ABI, functionName: 'approve', args: [CONTRACT_ADDRESSES.AMM, parseUnits(amountB, 18)] });
+      approveBWrite({ address: CONTRACT_ADDRESSES.mEURC as `0x${string}`, abi: ERC20_ABI, functionName: 'approve', args: [CONTRACT_ADDRESSES.AMM, parseUnits(amountB, 10)] });
     } else {
       addWrite({
         address: CONTRACT_ADDRESSES.AMM as `0x${string}`,
         abi: AMM_ABI,
         functionName: 'addLiquidity',
-        args: [parseUnits(amountA, 6), parseUnits(amountB, 18)],
+        args: [parseUnits(amountA, 10), parseUnits(amountB, 10)],
       });
     }
   };
@@ -127,7 +127,7 @@ export const PoolsPanel = () => {
       address: CONTRACT_ADDRESSES.AMM as `0x${string}`,
       abi: AMM_ABI,
       functionName: 'removeLiquidity',
-      args: [parseUnits(removeAmount, 18)],
+      args: [parseUnits(removeAmount, 10)],
     });
   };
 
@@ -141,9 +141,9 @@ export const PoolsPanel = () => {
     </div>
   );
 
-  const resA = reserves ? formatUnits((reserves as any)[0], 6) : '0';
-  const resB = reserves ? formatUnits((reserves as any)[1], 18) : '0';
-  const userLP = userLiquidity ? formatUnits(userLiquidity as bigint, 18) : '0';
+  const resA = reserves ? formatUnits((reserves as any)[0], 10) : '0';
+  const resB = reserves ? formatUnits((reserves as any)[1], 10) : '0';
+  const userLP = userLiquidity ? formatUnits(userLiquidity as bigint, 10) : '0';
   const share = poolShare ? (Number(poolShare) / 10000).toFixed(4) : '0';
 
   return (
@@ -216,7 +216,7 @@ export const PoolsPanel = () => {
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center px-1">
                    <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Input Amount A</span>
-                   <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Bal: {balanceA ? Number(formatUnits(balanceA as bigint, 6)).toFixed(2) : '0'}</span>
+                   <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Bal: {balanceA ? Number(formatUnits(balanceA as bigint, 10)).toFixed(2) : '0'}</span>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
                   <input type="number" value={amountA} onChange={(e) => setAmountA(e.target.value)} placeholder="0.00" className="bg-transparent text-xl font-bold text-white outline-none w-full" />
@@ -233,7 +233,7 @@ export const PoolsPanel = () => {
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center px-1">
                    <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Input Amount B</span>
-                   <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Bal: {balanceB ? Number(formatUnits(balanceB as bigint, 18)).toFixed(2) : '0'}</span>
+                   <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Bal: {balanceB ? Number(formatUnits(balanceB as bigint, 10)).toFixed(2) : '0'}</span>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
                   <input type="number" value={amountB} onChange={(e) => setAmountB(e.target.value)} placeholder="0.00" className="bg-transparent text-xl font-bold text-white outline-none w-full" />

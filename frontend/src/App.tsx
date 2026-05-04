@@ -74,7 +74,7 @@ export default function App() {
             </div>
 
             <div className="flex flex-col gap-4 order-2 xl:order-1">
-              <div className="glass-frame h-[504px] xl:h-[504px] my-[1px]">
+              <div className="glass-frame h-[506px] xl:h-[506px] my-0">
                 <PriceChart />
               </div>
               <div className="flex items-center gap-4 mt-1 px-2">
