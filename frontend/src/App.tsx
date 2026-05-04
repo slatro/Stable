@@ -28,7 +28,8 @@ export default function App() {
         <div className="orb orb-2" />
       </div>
       
-      <Header />
+      {/* Passing the required props to Header */}
+      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <div className="w-full bg-white/[0.02] border-b border-white/[0.05] py-2 px-8 relative overflow-hidden mt-20">
         <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-12">
@@ -45,17 +46,29 @@ export default function App() {
       </div>
 
       <main className="flex-1 flex flex-col items-center relative pt-8 pb-8 px-4 md:px-6">
-        <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-6 md:gap-12 items-stretch">
-          <div className="flex flex-col gap-4">
-            <div className="glass-frame h-[506px]">
-              <PriceChart />
+        {activeTab === 'swap' ? (
+          <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-6 md:gap-12 items-stretch animate-in fade-in duration-700">
+            <div className="flex flex-col gap-4">
+              <div className="glass-frame h-[506px]">
+                <PriceChart />
+              </div>
+              <TransactionPanel />
             </div>
-            <TransactionPanel />
+            <div className="flex flex-col items-center gap-4">
+              <SwapCard slippage={slippage} setSlippage={setSlippage} />
+            </div>
           </div>
-          <div className="flex flex-col items-center gap-4">
-            <SwapCard slippage={slippage} setSlippage={setSlippage} />
+        ) : activeTab === 'invoices' ? (
+          <InvoiceForm />
+        ) : activeTab === 'pools' ? (
+          <PoolsPanel />
+        ) : activeTab === 'dashboard' ? (
+          <Dashboard />
+        ) : (
+          <div className="flex items-center justify-center h-64 text-white/20 uppercase tracking-[0.5em] font-black italic">
+            Coming Soon
           </div>
-        </div>
+        )}
       </main>
 
       <footer className="py-12 px-8 border-t border-white/[0.05] bg-white/[0.01]">
