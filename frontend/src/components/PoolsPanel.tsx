@@ -171,6 +171,13 @@ export const PoolsPanel = () => {
     query: { enabled: !!tokenA?.addr && !!tokenB?.addr }
   });
 
+  const { data: totalPoolLiquidity } = useReadContract({
+    address: (poolAddress || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    abi: AMM_ABI as any,
+    functionName: 'totalLiquidity',
+    query: { enabled: !!poolAddress, refetchInterval: 5000 }
+  });
+
   const { data: reserves } = useReadContract({
     address: (poolAddress || '0x0000000000000000000000000000000000000000') as `0x${string}`,
     abi: AMM_ABI as any,
@@ -229,40 +236,156 @@ export const PoolsPanel = () => {
       args: [
         tokenA.addr, tokenB.addr,
         parseUnits(amountA, tokenA.decimals), parseUnits(amountB, tokenB.decimals),
-        0n, 0n, address, BigInt(Math.floor(Date.now() / 1000) + 1200)
+        address
       ]
     }, {
       onSuccess: () => { dismiss(tid); setView('list'); notify({ type: 'success', title: 'Success', message: 'Liquidity added.' }); }
     });
   };
 
+  const handleRemoveLiquidity = () => {
+    if (!poolAddress || removePercent <= 0) return;
+    const tid = notify({ type: 'loading', title: 'Removing Liquidity', message: `Withdrawing ${tokenA?.symbol}/${tokenB?.symbol} assets...` });
+    
+    // In our simplified AMM, the pool address is the LP token
+    // We need to fetch user's LP balance first
+    writeAction({
+      address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`,
+      abi: ROUTER_ABI as any,
+      functionName: 'removeLiquidity',
+      args: [
+        tokenA.addr, tokenB.addr,
+        (userLPBalance as bigint * BigInt(removePercent)) / 100n,
+        address
+      ]
+    }, {
+      onSuccess: () => { dismiss(tid); setView('list'); notify({ type: 'success', title: 'Success', message: 'Liquidity removed.' }); }
+    });
+  };
+
+  const { data: userLPBalance } = useReadContract({
+    address: (poolAddress || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    abi: AMM_ABI as any,
+    functionName: 'liquidityShares',
+    args: address ? [address] : undefined,
+    query: { enabled: !!poolAddress && !!address, refetchInterval: 5000 }
+  });
+
+  const { data: lpAllowance } = useReadContract({
+    address: (poolAddress || '0x0000000000000000000000000000000000000000') as `0x${string}`,
+    abi: ERC20_ABI as any, // LP doesn't have ERC20 but AMM inherits shares logic or we can use AMM directly
+    functionName: 'allowance', // Our AMM might need allowance if we use Router for remove
+    args: address ? [address, CONTRACT_ADDRESSES.ROUTER] : undefined,
+    query: { enabled: false } // Actually AMM doesn't have allowance for shares in our version yet
+  });
+
   const positions = useMemo(() => {
     return []; 
   }, []);
 
-  if (view === 'add') {
+  if (view === 'add' || view === 'remove') {
+    const isAdd = view === 'add';
     return (
       <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[440px] mx-auto w-full py-8">
         <div className="flex items-center justify-between px-2">
           <button onClick={() => setView('list')} className="p-2 hover:bg-white/5 rounded-xl text-white/40 hover:text-white transition-all"><ArrowLeft size={20} /></button>
-          <h2 className="text-xl font-black text-white tracking-tighter uppercase">Add Liquidity</h2>
+          <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+            <button 
+              onClick={() => setView('add')} 
+              className={`px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${isAdd ? 'bg-white text-black shadow-lg shadow-white/5' : 'text-white/40 hover:text-white'}`}
+            >
+              Add
+            </button>
+            <button 
+              onClick={() => setView('remove')} 
+              className={`px-6 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!isAdd ? 'bg-white text-black shadow-lg shadow-white/5' : 'text-white/40 hover:text-white'}`}
+            >
+              Remove
+            </button>
+          </div>
           <div className="w-10" />
         </div>
+
         <div className="premium-card p-5 flex flex-col gap-4">
-          <TokenInputSection label="Token A" token={tokenA} amount={amountA} setAmount={handleAmountAChange} address={address} isSelectOpen={isSelectOpen === 'A'} onTokenToggle={() => setIsSelectOpen(isSelectOpen === 'A' ? undefined : 'A')} onTokenSelect={(t: any) => { if(tokenB?.symbol === t.symbol) setTokenB(undefined); setTokenA(t); setIsSelectOpen(undefined); }} onUpdateState={setStateA} otherToken={tokenB} />
-          <div className="flex justify-center -my-2 z-10"><div className="p-1.5 bg-[#0a0a0a] border border-white/10 rounded-xl text-blue-500"><Plus size={12} strokeWidth={4} /></div></div>
-          <TokenInputSection label="Token B" token={tokenB} amount={amountB} setAmount={handleAmountBChange} address={address} isSelectOpen={isSelectOpen === 'B'} onTokenToggle={() => setIsSelectOpen(isSelectOpen === 'B' ? undefined : 'B')} onTokenSelect={(t: any) => { if(tokenA?.symbol === t.symbol) setTokenA(undefined); setTokenB(t); setIsSelectOpen(undefined); }} onUpdateState={setStateB} otherToken={tokenA} />
-          {ratio && tokenA && tokenB && <div className="px-1 flex justify-between items-center text-[9px] font-black text-white/20 uppercase tracking-[0.2em]"><span>Pool Ratio</span><span>1 {tokenA.symbol} = {ratio.toFixed(4)} {tokenB.symbol}</span></div>}
-          {!tokenA || !tokenB ? <button disabled className="w-full py-5 rounded-xl bg-white/5 text-white/20 font-black text-xs uppercase tracking-[0.4em] cursor-not-allowed">Select Tokens</button> :
-           stateA.insufficient ? <button disabled className="w-full py-5 rounded-xl bg-red-500/10 text-red-400 font-black text-xs uppercase tracking-[0.4em] cursor-not-allowed">Insufficient {tokenA.symbol}</button> :
-           stateB.insufficient ? <button disabled className="w-full py-5 rounded-xl bg-red-500/10 text-red-400 font-black text-xs uppercase tracking-[0.4em] cursor-not-allowed">Insufficient {tokenB.symbol}</button> :
-           stateA.needsApprove ? <button onClick={() => handleApprove(tokenA)} className="w-full py-5 rounded-xl bg-blue-500 text-white font-black text-xs uppercase tracking-[0.4em]">Approve {tokenA.symbol}</button> :
-           stateB.needsApprove ? <button onClick={() => handleApprove(tokenB)} className="w-full py-5 rounded-xl bg-blue-500 text-white font-black text-xs uppercase tracking-[0.4em]">Approve {tokenB.symbol}</button> :
-           <button onClick={handleAddLiquidity} className="w-full py-5 rounded-xl bg-white text-black font-black text-xs uppercase tracking-[0.4em] hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-white/5">Add Liquidity</button>}
+          {isAdd ? (
+            <>
+              <TokenInputSection label="Token A" token={tokenA} amount={amountA} setAmount={handleAmountAChange} address={address} isSelectOpen={isSelectOpen === 'A'} onTokenToggle={() => setIsSelectOpen(isSelectOpen === 'A' ? undefined : 'A')} onTokenSelect={(t: any) => { if(tokenB?.symbol === t.symbol) setTokenB(undefined); setTokenA(t); setIsSelectOpen(undefined); }} onUpdateState={setStateA} otherToken={tokenB} />
+              <div className="flex justify-center -my-2 z-10"><div className="p-1.5 bg-[#0a0a0a] border border-white/10 rounded-xl text-blue-500"><Plus size={12} strokeWidth={4} /></div></div>
+              <TokenInputSection label="Token B" token={tokenB} amount={amountB} setAmount={handleAmountBChange} address={address} isSelectOpen={isSelectOpen === 'B'} onTokenToggle={() => setIsSelectOpen(isSelectOpen === 'B' ? undefined : 'B')} onTokenSelect={(t: any) => { if(tokenA?.symbol === t.symbol) setTokenA(undefined); setTokenB(t); setIsSelectOpen(undefined); }} onUpdateState={setStateB} otherToken={tokenA} />
+            </>
+          ) : (
+            <div className="flex flex-col gap-6 py-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-end px-1">
+                  <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Amount to Remove</span>
+                  <span className="text-4xl font-black text-white tracking-tighter">{removePercent}%</span>
+                </div>
+                <input 
+                  type="range" min="1" max="100" value={removePercent} 
+                  onChange={(e) => setRemovePercent(parseInt(e.target.value))}
+                  className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {[25, 50, 75, 100].map(pct => (
+                    <button 
+                      key={pct} onClick={() => setRemovePercent(pct)}
+                      className={`py-2 rounded-lg border text-[10px] font-black transition-all ${removePercent === pct ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-white/5 border-white/10 text-white/40 hover:border-white/20'}`}
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col gap-3">
+                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-white/30">
+                  <span>You will receive</span>
+                  <div className="flex items-center gap-1"><Droplets size={12} /> Pool: {tokenA?.symbol}/{tokenB?.symbol}</div>
+                </div>
+                <div className="flex flex-col gap-2 pt-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <img src={tokenA?.logo} className="w-5 h-5 rounded-full" />
+                      <span className="text-xs font-black text-white uppercase">{tokenA?.symbol}</span>
+                    </div>
+                    <span className="text-sm font-black text-white">~ {(reserves && userLPBalance && totalPoolLiquidity && (totalPoolLiquidity as bigint) > 0n && tokenA ? parseFloat(formatUnits(((reserves as any)[0] || 0n) * (userLPBalance as bigint) * BigInt(removePercent) / (totalPoolLiquidity as bigint) / 100n, tokenA.decimals || 18)) : 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <img src={tokenB?.logo} className="w-5 h-5 rounded-full" />
+                      <span className="text-xs font-black text-white uppercase">{tokenB?.symbol}</span>
+                    </div>
+                    <span className="text-sm font-black text-white">~ {(reserves && userLPBalance && totalPoolLiquidity && (totalPoolLiquidity as bigint) > 0n && tokenB ? parseFloat(formatUnits(((reserves as any)[1] || 0n) * (userLPBalance as bigint) * BigInt(removePercent) / (totalPoolLiquidity as bigint) / 100n, tokenB.decimals || 18)) : 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {ratio && tokenA && tokenB && isAdd && <div className="px-1 flex justify-between items-center text-[9px] font-black text-white/20 uppercase tracking-[0.2em]"><span>Pool Ratio</span><span>1 {tokenA.symbol} = {ratio.toFixed(4)} {tokenB.symbol}</span></div>}
+          
+          {isAdd ? (
+            !tokenA || !tokenB ? <button disabled className="w-full py-5 rounded-xl bg-white/5 text-white/20 font-black text-xs uppercase tracking-[0.4em] cursor-not-allowed">Select Tokens</button> :
+            stateA.insufficient ? <button disabled className="w-full py-5 rounded-xl bg-red-500/10 text-red-400 font-black text-xs uppercase tracking-[0.4em] cursor-not-allowed">Insufficient {tokenA.symbol}</button> :
+            stateB.insufficient ? <button disabled className="w-full py-5 rounded-xl bg-red-500/10 text-red-400 font-black text-xs uppercase tracking-[0.4em] cursor-not-allowed">Insufficient {tokenB.symbol}</button> :
+            stateA.needsApprove ? <button onClick={() => handleApprove(tokenA)} className="w-full py-5 rounded-xl bg-blue-500 text-white font-black text-xs uppercase tracking-[0.4em]">Approve {tokenA.symbol}</button> :
+            stateB.needsApprove ? <button onClick={() => handleApprove(tokenB)} className="w-full py-5 rounded-xl bg-blue-500 text-white font-black text-xs uppercase tracking-[0.4em]">Approve {tokenB.symbol}</button> :
+            <button onClick={handleAddLiquidity} className="w-full py-5 rounded-xl bg-white text-black font-black text-xs uppercase tracking-[0.4em] hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-white/5">Add Liquidity</button>
+          ) : (
+            <button 
+              onClick={handleRemoveLiquidity} 
+              disabled={!userLPBalance || userLPBalance === 0n}
+              className={`w-full py-5 rounded-xl font-black text-xs uppercase tracking-[0.4em] transition-all shadow-xl ${(!userLPBalance || userLPBalance === 0n) ? 'bg-white/5 text-white/20 cursor-not-allowed' : 'bg-red-500 text-white shadow-red-500/10 hover:scale-[1.02] active:scale-95'}`}
+            >
+              {(!userLPBalance || userLPBalance === 0n) ? 'No Position Found' : 'Remove Liquidity'}
+            </button>
+          )}
         </div>
       </div>
     );
   }
+
+
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-700 w-full max-w-7xl mx-auto py-4">
@@ -343,7 +466,7 @@ export const PoolsPanel = () => {
                           onClick={() => { setTokenA(pool.tokens[0]); setTokenB(pool.tokens[1]); setView('add'); }} 
                           className="px-4 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-[9px] font-black uppercase hover:bg-white hover:text-black transition-all"
                         >
-                          Add
+                          Add / Remove
                         </button>
                       </td>
                     </tr>

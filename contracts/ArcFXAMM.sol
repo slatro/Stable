@@ -5,212 +5,124 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-/**
- * @title ArcFXAMM - Professional Stablecoin AMM
- * @notice Implements Constant Product AMM with Decimal Normalization, Pausable trading, and Protocol Fees.
- */
-contract ArcFXAMM is ReentrancyGuard, Pausable, Ownable {
+contract ArcFXAMM is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
-    address public immutable tokenA;
-    address public immutable tokenB;
-    uint8 public immutable decimalsA;
-    uint8 public immutable decimalsB;
+    address public immutable token0;
+    address public immutable token1;
+    uint8 public immutable decimals0;
+    uint8 public immutable decimals1;
 
-    uint256 public reserveA;
-    uint256 public reserveB;
-
+    uint256 public reserve0;
+    uint256 public reserve1;
     uint256 public totalLiquidity;
-    mapping(address => uint256) public liquidityProviderShares;
+    mapping(address => uint256) public liquidityShares;
 
-    address public treasury;
-    uint256 public protocolFeeShare = 166; // ~16.6% of the 0.3% fee (5 basis points total)
-    uint256 public constant FEE_DENOMINATOR = 100000;
-    uint256 public constant TOTAL_SWAP_FEE = 300; // 0.3% = 300/100000 ? No, let's use 1000 for simplicity as before but more precise.
-    
-    // Using 10000 as denominator for 0.3% fee (30/10000)
-    uint256 public constant SWAP_FEE_BPS = 30; // 0.3%
-    uint256 public constant PROTOCOL_FEE_BPS = 5; // 0.05% out of the 0.3%
-
-    event LiquidityAdded(address indexed provider, uint256 amountA, uint256 amountB, uint256 liquidityMinted);
-    event LiquidityRemoved(address indexed provider, uint256 amountA, uint256 amountB, uint256 liquidityBurned);
-    event Swap(address indexed user, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut);
-    event ReservesUpdated(uint256 reserveA, uint256 reserveB);
-    event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
-
-    constructor(address _tokenA, address _tokenB, address _treasury) Ownable(msg.sender) {
-        require(_tokenA != address(0) && _tokenB != address(0), "Invalid tokens");
-        require(_treasury != address(0), "Invalid treasury");
-        tokenA = _tokenA;
-        tokenB = _tokenB;
-        decimalsA = IERC20Metadata(_tokenA).decimals();
-        decimalsB = IERC20Metadata(_tokenB).decimals();
-        treasury = _treasury;
+    constructor(address _token0, address _token1) Ownable(msg.sender) {
+        token0 = _token0;
+        token1 = _token1;
+        decimals0 = IERC20Metadata(_token0).decimals();
+        decimals1 = IERC20Metadata(_token1).decimals();
     }
 
-    // --- Admin Functions ---
+    // --- Core Functions ---
 
-    function pause() external onlyOwner {
-        _pause();
-    }
+    function addLiquidity(uint256 amount0, uint256 amount1, address to) external nonReentrant returns (uint256 liquidity) {
+        IERC20(token0).safeTransferFrom(msg.sender, address(this), amount0);
+        IERC20(token1).safeTransferFrom(msg.sender, address(this), amount1);
 
-    function unpause() external onlyOwner {
-        _unpause();
-    }
-
-    function setTreasury(address _newTreasury) external onlyOwner {
-        require(_newTreasury != address(0), "Invalid treasury");
-        emit TreasuryUpdated(treasury, _newTreasury);
-        treasury = _newTreasury;
-    }
-
-    // --- Core AMM Logic ---
-
-    function addLiquidity(uint256 amountA, uint256 amountB) external whenNotPaused nonReentrant returns (uint256 liquidity) {
-        require(amountA > 0 && amountB > 0, "Insufficient amounts");
-
-        IERC20(tokenA).safeTransferFrom(msg.sender, address(this), amountA);
-        IERC20(tokenB).safeTransferFrom(msg.sender, address(this), amountB);
-
-        // Normalize amounts to 18 decimals for internal math
-        uint256 normA = _normalize(amountA, decimalsA);
-        uint256 normB = _normalize(amountB, decimalsB);
-        uint256 normReserveA = _normalize(reserveA, decimalsA);
-        uint256 normReserveB = _normalize(reserveB, decimalsB);
+        uint256 norm0 = _normalize(amount0, decimals0);
+        uint256 norm1 = _normalize(amount1, decimals1);
+        uint256 normRes0 = _normalize(reserve0, decimals0);
+        uint256 normRes1 = _normalize(reserve1, decimals1);
 
         if (totalLiquidity == 0) {
-            liquidity = Math.sqrt(normA * normB);
+            liquidity = Math.sqrt(norm0 * norm1);
         } else {
             liquidity = Math.min(
-                (normA * totalLiquidity) / normReserveA,
-                (normB * totalLiquidity) / normReserveB
+                (norm0 * totalLiquidity) / normRes0,
+                (norm1 * totalLiquidity) / normRes1
             );
         }
 
-        require(liquidity > 0, "Liquidity minted is 0");
-
-        reserveA += amountA;
-        reserveB += amountB;
+        require(liquidity > 0, "INSUFFICIENT_LIQUIDITY_MINTED");
+        
+        reserve0 += amount0;
+        reserve1 += amount1;
         totalLiquidity += liquidity;
-        liquidityProviderShares[msg.sender] += liquidity;
-
-        emit LiquidityAdded(msg.sender, amountA, amountB, liquidity);
-        emit ReservesUpdated(reserveA, reserveB);
+        liquidityShares[to] += liquidity;
     }
 
-    function removeLiquidity(uint256 lpAmount) external nonReentrant returns (uint256 amountA, uint256 amountB) {
-        require(lpAmount > 0, "Invalid LP amount");
-        require(liquidityProviderShares[msg.sender] >= lpAmount, "Insufficient LP shares");
+    function removeLiquidity(uint256 liquidity, address to) external nonReentrant returns (uint256 amount0, uint256 amount1) {
+        require(liquidityShares[msg.sender] >= liquidity, "INSUFFICIENT_LIQUIDITY");
 
-        amountA = (lpAmount * reserveA) / totalLiquidity;
-        amountB = (lpAmount * reserveB) / totalLiquidity;
+        amount0 = (liquidity * reserve0) / totalLiquidity;
+        amount1 = (liquidity * reserve1) / totalLiquidity;
 
-        require(amountA > 0 && amountB > 0, "Insufficient liquidity burned");
+        liquidityShares[msg.sender] -= liquidity;
+        totalLiquidity -= liquidity;
+        reserve0 -= amount0;
+        reserve1 -= amount1;
 
-        liquidityProviderShares[msg.sender] -= lpAmount;
-        totalLiquidity -= lpAmount;
-        reserveA -= amountA;
-        reserveB -= amountB;
-
-        IERC20(tokenA).safeTransfer(msg.sender, amountA);
-        IERC20(tokenB).safeTransfer(msg.sender, amountB);
-
-        emit LiquidityRemoved(msg.sender, amountA, amountB, lpAmount);
-        emit ReservesUpdated(reserveA, reserveB);
+        IERC20(token0).safeTransfer(to, amount0);
+        IERC20(token1).safeTransfer(to, amount1);
     }
 
-    function swap(address tokenIn, uint256 amountIn, uint256 minAmountOut) external whenNotPaused nonReentrant returns (uint256 amountOut) {
-        require(tokenIn == tokenA || tokenIn == tokenB, "Invalid token");
-        require(amountIn > 0, "Insufficient input");
+    function swap(address tokenIn, uint256 amountIn, uint256 minAmountOut, address to) external nonReentrant returns (uint256 amountOut) {
+        require(tokenIn == token0 || tokenIn == token1, "INVALID_TOKEN");
+        bool isToken0 = tokenIn == token0;
+        (address tIn, address tOut) = isToken0 ? (token0, token1) : (token1, token0);
+        (uint256 resIn, uint256 resOut) = isToken0 ? (reserve0, reserve1) : (reserve1, reserve0);
+        (uint8 decIn, uint8 decOut) = isToken0 ? (decimals0, decimals1) : (decimals1, decimals0);
 
-        bool isAIn = tokenIn == tokenA;
-        (address tIn, address tOut) = isAIn ? (tokenA, tokenB) : (tokenB, tokenA);
-        (uint256 resIn, uint256 resOut) = isAIn ? (reserveA, reserveB) : (reserveB, reserveA);
-        (uint8 decIn, uint8 decOut) = isAIn ? (decimalsA, decimalsB) : (decimalsB, decimalsA);
-
-        // Normalize for math
         uint256 normIn = _normalize(amountIn, decIn);
         uint256 normResIn = _normalize(resIn, decIn);
         uint256 normResOut = _normalize(resOut, decOut);
 
-        // Fee calculation (0.3% total)
-        uint256 feeAmount = (normIn * SWAP_FEE_BPS) / 10000;
-        uint256 protocolFee = (normIn * PROTOCOL_FEE_BPS) / 10000;
-        uint256 amountInWithFee = normIn - feeAmount;
-
-        // Constant Product Formula: dy = (y * dx) / (x + dx)
+        // 0.3% Fee
+        uint256 amountInWithFee = (normIn * 997) / 1000;
         uint256 normOut = (amountInWithFee * normResOut) / (normResIn + amountInWithFee);
         amountOut = _denormalize(normOut, decOut);
 
-        require(amountOut >= minAmountOut, "High slippage");
-        require(amountOut < resOut, "Insufficient liquidity");
+        require(amountOut >= minAmountOut, "INSUFFICIENT_OUTPUT_AMOUNT");
 
-        // Execute transfers
         IERC20(tIn).safeTransferFrom(msg.sender, address(this), amountIn);
-        
-        // Handle protocol fee (Treasury gets its slice)
-        if (protocolFee > 0) {
-            uint256 treasuryAmount = _denormalize(protocolFee, decIn);
-            if (treasuryAmount > 0) {
-                IERC20(tIn).safeTransfer(treasury, treasuryAmount);
-                if (isAIn) reserveA -= treasuryAmount; else reserveB -= treasuryAmount;
-            }
-        }
+        IERC20(tOut).safeTransfer(to, amountOut);
 
-        IERC20(tOut).safeTransfer(msg.sender, amountOut);
-
-        if (isAIn) {
-            reserveA += amountIn;
-            reserveB -= amountOut;
+        if (isToken0) {
+            reserve0 += amountIn;
+            reserve1 -= amountOut;
         } else {
-            reserveB += amountIn;
-            reserveA -= amountOut;
+            reserve1 += amountIn;
+            reserve0 -= amountOut;
         }
-
-        emit Swap(msg.sender, tIn, tOut, amountIn, amountOut);
-        emit ReservesUpdated(reserveA, reserveB);
     }
 
     // --- Helpers ---
 
     function _normalize(uint256 amount, uint8 decimals) internal pure returns (uint256) {
         if (decimals == 18) return amount;
-        return amount * (10**(18 - decimals));
+        if (decimals < 18) return amount * (10**(18 - decimals));
+        return amount / (10**(decimals - 18));
     }
 
     function _denormalize(uint256 amount, uint8 decimals) internal pure returns (uint256) {
         if (decimals == 18) return amount;
-        return amount / (10**(18 - decimals));
+        if (decimals < 18) return amount / (10**(18 - decimals));
+        return amount * (10**(decimals - 18));
     }
 
     function getAmountOut(uint256 amountIn, address tokenIn) external view returns (uint256) {
-        bool isAIn = tokenIn == tokenA;
-        (uint256 resIn, uint256 resOut) = isAIn ? (reserveA, reserveB) : (reserveB, reserveA);
-        (uint8 decIn, uint8 decOut) = isAIn ? (decimalsA, decimalsB) : (decimalsB, decimalsA);
-
+        bool isToken0 = tokenIn == token0;
+        (uint256 resIn, uint256 resOut) = isToken0 ? (reserve0, reserve1) : (reserve1, reserve0);
+        (uint8 decIn, uint8 decOut) = isToken0 ? (decimals0, decimals1) : (decimals1, decimals0);
+        
         uint256 normIn = _normalize(amountIn, decIn);
-        uint256 normResIn = _normalize(resIn, decIn);
-        uint256 normResOut = _normalize(resOut, decOut);
-
-        uint256 amountInWithFee = normIn - ((normIn * SWAP_FEE_BPS) / 10000);
-        uint256 normOut = (amountInWithFee * normResOut) / (normResIn + amountInWithFee);
+        uint256 amountInWithFee = (normIn * 997) / 1000;
+        uint256 normOut = (amountInWithFee * _normalize(resOut, decOut)) / (_normalize(resIn, decIn) + amountInWithFee);
         return _denormalize(normOut, decOut);
     }
-    function getReserves() external view returns (uint256 _reserveA, uint256 _reserveB) {
-        return (reserveA, reserveB);
-    }
-
-    function getUserLiquidity(address user) external view returns (uint256) {
-        return liquidityProviderShares[user];
-    }
-
-    function getPoolShare(address user) external view returns (uint256 sharePPM) {
-        if (totalLiquidity == 0) return 0;
-        return (liquidityProviderShares[user] * 1000000) / totalLiquidity;
-    }
 }
-

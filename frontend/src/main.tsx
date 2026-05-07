@@ -29,7 +29,7 @@ const config = getDefaultConfig({
   projectId: "89a92bcf5ff047a59a84b2335a2932ee",
   chains: [arcTestnet],
   transports: {
-    [arcTestnet.id]: http(),
+    [arcTestnet.id]: http(ARC_TESTNET_CONFIG.rpcUrl),
   },
 });
 

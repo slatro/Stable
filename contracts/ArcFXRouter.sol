@@ -5,9 +5,8 @@ import "./ArcFXFactory.sol";
 import "./ArcFXAMM.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract ArcFXRouter is ReentrancyGuard {
+contract ArcFXRouter {
     using SafeERC20 for IERC20;
 
     address public immutable factory;
@@ -16,89 +15,65 @@ contract ArcFXRouter is ReentrancyGuard {
         factory = _factory;
     }
 
-    modifier ensure(uint deadline) {
-        require(deadline >= block.timestamp, 'ArcFXRouter: EXPIRED');
-        _;
-    }
-
-    // --- Liquidity Functions ---
-
     function addLiquidity(
         address tokenA,
         address tokenB,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) external nonReentrant ensure(deadline) returns (uint256 amountA, uint256 amountB, uint256 liquidity) {
-        address pool = ArcFXFactory(factory).getPool(tokenA, tokenB);
+        uint256 amountA,
+        uint256 amountB,
+        address to
+    ) external returns (uint256 liquidity) {
+        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        (uint256 amount0, uint256 amount1) = tokenA < tokenB ? (amountA, amountB) : (amountB, amountA);
+
+        address pool = ArcFXFactory(factory).getPool(token0, token1);
         if (pool == address(0)) {
-            pool = ArcFXFactory(factory).createPool(tokenA, tokenB);
+            pool = ArcFXFactory(factory).createPool(token0, token1);
         }
 
-        // Simplification for this version: using desired amounts directly
-        // In full Uniswap V2, this would calculate optimal amounts based on reserves
-        amountA = amountADesired;
-        amountB = amountBDesired;
+        IERC20(token0).safeTransferFrom(msg.sender, address(this), amount0);
+        IERC20(token1).safeTransferFrom(msg.sender, address(this), amount1);
 
-        require(amountA >= amountAMin, "ArcFXRouter: INSUFFICIENT_A_AMOUNT");
-        require(amountB >= amountBMin, "ArcFXRouter: INSUFFICIENT_B_AMOUNT");
+        IERC20(token0).approve(pool, amount0);
+        IERC20(token1).approve(pool, amount1);
 
-        IERC20(tokenA).safeTransferFrom(msg.sender, pool, amountA);
-        IERC20(tokenB).safeTransferFrom(msg.sender, pool, amountB);
-        liquidity = ArcFXAMM(pool).addLiquidity(to);
+        liquidity = ArcFXAMM(pool).addLiquidity(amount0, amount1, to);
     }
 
     function removeLiquidity(
         address tokenA,
         address tokenB,
         uint256 liquidity,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address to,
-        uint256 deadline
-    ) external nonReentrant ensure(deadline) returns (uint256 amountA, uint256 amountB) {
+        address to
+    ) external returns (uint256 amount0, uint256 amount1) {
         address pool = ArcFXFactory(factory).getPool(tokenA, tokenB);
-        require(pool != address(0), "ArcFXRouter: POOL_NOT_FOUND");
+        require(pool != address(0), "POOL_NOT_FOUND");
 
-        // Send LP tokens to the pool
-        IERC20(pool).safeTransferFrom(msg.sender, pool, liquidity);
-        
-        // Burn and get tokens
-        (amountA, amountB) = ArcFXAMM(pool).removeLiquidity(to);
-        
-        require(amountA >= amountAMin, "ArcFXRouter: INSUFFICIENT_A_AMOUNT");
-        require(amountB >= amountBMin, "ArcFXRouter: INSUFFICIENT_B_AMOUNT");
+        // User must approve Router to spend LP tokens (which is the pool address itself)
+        IERC20(pool).safeTransferFrom(msg.sender, address(this), liquidity);
+        IERC20(pool).approve(pool, liquidity); // In our AMM, shares are handled via mapping, but let's be safe
+
+        (amount0, amount1) = ArcFXAMM(pool).removeLiquidity(liquidity, to);
     }
 
-    // --- Swapping Functions ---
-
     function swapExactTokensForTokens(
+        address tokenIn,
+        address tokenOut,
         uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to,
-        uint256 deadline
-    ) external nonReentrant ensure(deadline) returns (uint256[] memory amounts) {
-        amounts = new uint256[](path.length);
-        amounts[0] = amountIn;
-        
-        // In this version we only support direct pairs for simplicity
-        // In a full version, we'd loop through the path and calculate amounts
-        require(path.length == 2, "ArcFXRouter: ONLY_DIRECT_PAIRS_SUPPORTED_YET");
-        
-        address pool = ArcFXFactory(factory).getPool(path[0], path[1]);
-        require(pool != address(0), "ArcFXRouter: POOL_NOT_FOUND");
-        
-        // Calculate amountOut off-chain or via helper (omitted here for brevity, assume caller provides correct amountOutMin)
-        uint256 amountOut = ArcFXAMM(pool).getAmountOut(amountIn, path[0]);
-        require(amountOut >= amountOutMin, "ArcFXRouter: INSUFFICIENT_OUTPUT_AMOUNT");
-        
-        amounts[1] = amountOut;
+        uint256 minAmountOut,
+        address to
+    ) external returns (uint256 amountOut) {
+        address pool = ArcFXFactory(factory).getPool(tokenIn, tokenOut);
+        require(pool != address(0), "POOL_NOT_FOUND");
 
-        IERC20(path[0]).safeTransferFrom(msg.sender, pool, amountIn);
-        ArcFXAMM(pool).swap(amountOut, path[1], to);
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+        IERC20(tokenIn).approve(pool, amountIn);
+
+        amountOut = ArcFXAMM(pool).swap(tokenIn, amountIn, minAmountOut, to);
+    }
+
+    function getAmountOut(address tokenIn, address tokenOut, uint256 amountIn) external view returns (uint256) {
+        address pool = ArcFXFactory(factory).getPool(tokenIn, tokenOut);
+        if (pool == address(0)) return 0;
+        return ArcFXAMM(pool).getAmountOut(amountIn, tokenIn);
     }
 }

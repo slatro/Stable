@@ -1,7 +1,7 @@
 import React from 'react';
 import { Wallet, TrendingUp, Zap, ShieldCheck, ArrowUpRight, ArrowDownRight, Search, Filter, Loader2, CheckCircle2 } from 'lucide-react';
 import { CONTRACT_ADDRESSES, TOKENS } from '../config/contracts';
-import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt, useReadContracts } from 'wagmi';
+import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt, useReadContracts, useReadContract } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { usePrices } from '../context/PriceContext';
 import FAUCET_ABI from '../abis/MultiFaucet.json';
@@ -61,9 +61,17 @@ const StatCard = ({ title, value, change, icon: Icon, color }: any) => (
 );
 
 const AssetRow = ({ asset, userAddress, livePrices }: any) => {
-  const { data: balance } = useBalance({
-    address: userAddress,
-    token: asset?.addr?.startsWith('0x3600') ? undefined : (asset?.addr as `0x${string}`),
+  const { data: balance } = useReadContract({
+    address: asset.addr as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: userAddress ? [userAddress] : undefined,
+  });
+
+  const { data: decimals } = useReadContract({
+    address: asset.addr as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'decimals',
   });
 
   const getPriceData = () => {
@@ -74,8 +82,8 @@ const AssetRow = ({ asset, userAddress, livePrices }: any) => {
 
   const { price: currentPrice, change24h } = getPriceData();
   const exchangeRate = 1 / currentPrice;
-  const formattedBalance = balance ? parseFloat(balance.formatted).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : '0.0000';
-  const usdValue = balance ? (parseFloat(balance.formatted) * currentPrice).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : '0.0000';
+  const formattedBalance = balance !== undefined ? parseFloat(formatUnits(balance as bigint, (decimals as number) || 18)).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : '0.0000';
+  const usdValue = balance !== undefined ? (parseFloat(formatUnits(balance as bigint, (decimals as number) || 18)) * currentPrice).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : '0.0000';
 
   return (
     <tr className="group border-b border-white/[0.03] last:border-0 hover:bg-white/[0.02] transition-all duration-300">

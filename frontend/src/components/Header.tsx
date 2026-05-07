@@ -26,11 +26,20 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
     localStorage.setItem('arc_avatar', url);
   };
 
-  const { data: nativeBalance } = useBalance({
-    address: address,
+  const { data: rawUsdcBalance } = useReadContract({
+    address: CONTRACT_ADDRESSES.USDC_NATIVE as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
   });
 
-  const formattedBalance = nativeBalance ? parseFloat(nativeBalance.formatted).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 }) : '0.0000';
+  const { data: usdcDecimals } = useReadContract({
+    address: CONTRACT_ADDRESSES.USDC_NATIVE as `0x${string}`,
+    abi: ERC20_ABI,
+    functionName: 'decimals',
+  });
+
+  const formattedNative = rawUsdcBalance !== undefined ? parseFloat(formatUnits(rawUsdcBalance as bigint, (usdcDecimals as number) || 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
 
   // Faucet Logic
   const [localLastMint, setLocalLastMint] = useState<number>(0);
@@ -197,8 +206,8 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
               className="group flex items-center h-9 rounded-xl bg-white/[0.03] border border-white/10 hover:border-blue-500/30 hover:bg-white/[0.06] transition-all pl-3 pr-1.5 gap-3 backdrop-blur-xl"
             >
               <div className="flex flex-col items-end">
-                <span className="text-[9px] font-black text-white leading-none mb-0.5">
-                  {formattedBalance} <span className="text-blue-400">USDC</span>
+                <span className="text-[10px] font-black text-white leading-none mb-0.5">
+                  {formattedNative} <span className="text-blue-400">USDC</span>
                 </span>
                 <span className="text-[8px] font-bold text-white/30 uppercase tracking-tighter">
                   {address?.slice(0, 6)}...{address?.slice(-4)}
