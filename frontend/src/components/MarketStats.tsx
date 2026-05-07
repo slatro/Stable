@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, BarChart3, Activity, Info } from 'lucide-react';
+import { TrendingUp, BarChart3, Activity, Info, ShieldCheck } from 'lucide-react';
 
 import { usePrices } from '../context/PriceContext';
 

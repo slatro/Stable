@@ -159,7 +159,7 @@ export const SwapCard = ({
 
   const { data: pairAddress } = useReadContract({
     address: CONTRACT_ADDRESSES.FACTORY as `0x${string}`,
-    abi: FACTORY_ABI,
+    abi: FACTORY_ABI as any,
     functionName: 'getPair',
     args: tokenIn && tokenOut ? [tokenIn.addr, tokenOut.addr] : undefined,
     query: { enabled: !!tokenIn && !!tokenOut }
@@ -194,7 +194,7 @@ export const SwapCard = ({
   }, [fromAmount, tokenIn, tokenOut, prices]);
 
   const priceImpact = useMemo(() => {
-    if (!fromAmount || !tokenIn || !prices[tokenIn.symbol]) return 0.01;
+    if (!fromAmount || !tokenIn || !prices[tokenIn.symbol]) return "0.01";
     const amountUsd = parseFloat(fromAmount) * (prices[tokenIn.symbol]?.price || 1);
     // Simple impact formula: (Trade / Pool) * 100, scaled for demo
     const impact = (amountUsd / liquidity) * 100;
@@ -367,8 +367,8 @@ export const SwapCard = ({
                   </div>
                   <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Price Impact</span>
                 </div>
-                <span className={`text-[10px] font-black tabular-nums ${parseFloat(priceImpact) > 1 ? 'text-red-400' : 'text-emerald-400/90'}`}>
-                  {parseFloat(priceImpact) < 0.01 ? '< 0.01%' : `${priceImpact}%`}
+                <span className={`text-[10px] font-black tabular-nums ${parseFloat(priceImpact.toString()) > 1 ? 'text-red-400' : 'text-emerald-400/90'}`}>
+                  {parseFloat(priceImpact.toString()) < 0.01 ? '< 0.01%' : `${priceImpact}%`}
                 </span>
               </div>
 
