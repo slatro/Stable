@@ -1,0 +1,257 @@
+
+> arcfx-frontend@0.1.0 dev
+> vite
+
+Port 5173 is in use, trying another one...
+
+  VITE v5.4.21  ready in 712 ms
+
+  ➜  Local:   http://localhost:5174/
+  ➜  Network: use --host to expose
+11:11:50 PM [vite] hmr update /src/components/FarmPanel.tsx, /src/styles.css
+11:13:35 PM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+11:20:21 PM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+11:20:24 PM [vite] hmr update /src/App.tsx, /src/styles.css
+11:20:28 PM [vite] hmr update /src/components/FarmPanel.tsx, /src/styles.css
+11:28:13 PM [vite] hmr update /src/components/FarmPanel.tsx, /src/styles.css
+11:28:13 PM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+11:28:20 PM [vite] hmr update /src/App.tsx, /src/styles.css
+11:28:57 PM [vite] hmr update /src/App.tsx, /src/styles.css
+11:30:06 PM [vite] page reload src/main.tsx
+11:30:34 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:31:20 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:31:38 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:34:17 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:34:17 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:35:00 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:37:48 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:38:13 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:38:40 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:39:14 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:40:14 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:46:34 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:46:34 PM [vite] page reload src/main.tsx
+11:46:34 PM [vite] hmr update /src/components/FarmPanel.tsx, /src/styles.css
+11:46:34 PM [vite] hmr update /src/App.tsx, /src/styles.css
+11:46:34 PM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+11:47:41 PM [vite] hmr update /src/components/FarmPanel.tsx, /src/styles.css
+11:47:52 PM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+11:48:05 PM [vite] hmr update /src/components/FarmPanel.tsx, /src/styles.css
+11:48:26 PM [vite] hmr update /src/components/FarmPanel.tsx, /src/styles.css
+11:49:52 PM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+11:50:04 PM [vite] hmr update /src/App.tsx, /src/styles.css
+11:50:22 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+11:51:35 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:00:13 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:00:38 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:02:15 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:05:40 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:09:15 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:36:33 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:40:23 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:41:11 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:43:04 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:44:45 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:46:26 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:49:10 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:50:52 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:53:01 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+12:57:10 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+1:04:23 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+1:10:04 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+1:16:01 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:18:59 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+1:21:16 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:24:11 AM [vite] hmr update /src/App.tsx, /src/styles.css
+1:24:36 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+1:24:56 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:25:20 AM [vite] hmr update /src/App.tsx, /src/styles.css
+1:25:52 AM [vite] hmr update /src/App.tsx, /src/styles.css
+1:26:46 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:26:47 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+1:26:47 AM [vite] hmr update /src/App.tsx, /src/styles.css
+1:28:12 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:34:01 AM [vite] hmr update /src/styles.css
+1:34:29 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:34:41 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:34:41 AM [vite] hmr update /src/styles.css
+1:35:25 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:36:42 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:38:42 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:40:49 AM [vite] page reload src/config/contracts.ts
+1:43:08 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:45:16 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:47:26 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:47:50 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:52:33 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:54:00 AM [vite] page reload src/config/contracts.ts
+1:55:54 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:58:23 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:58:53 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+1:59:27 AM [vite] page reload src/config/contracts.ts
+2:01:33 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+2:03:46 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+2:06:02 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+2:08:33 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+2:10:27 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+2:28:06 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:28:30 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:31:50 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:34:35 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:35:20 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:36:23 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:37:07 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:38:11 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:39:34 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:39:58 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+2:41:20 AM [vite] page reload src/config/contracts.ts
+2:44:34 AM [vite] page reload src/config/contracts.ts
+2:48:13 AM [vite] page reload src/config/contracts.ts
+2:49:25 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+2:51:21 AM [vite] page reload src/config/contracts.ts
+2:53:45 AM [vite] page reload src/config/contracts.ts
+2:54:06 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+2:56:46 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+2:57:48 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+2:58:17 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+2:59:50 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+3:02:56 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+3:03:27 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:05:33 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:06:12 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:07:50 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:08:06 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+3:11:34 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:13:09 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:15:16 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:15:29 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:16:37 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:16:55 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:40:16 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:43:07 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:53:42 AM [vite] page reload src/config/contracts.ts
+4:00:02 AM [vite] page reload src/config/contracts.ts
+4:03:38 AM [vite] page reload src/config/contracts.ts
+4:03:38 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+4:03:38 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+4:03:38 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+4:04:04 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+4:04:39 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+4:05:23 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+4:07:27 AM [vite] page reload src/config/contracts.ts
+4:08:14 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+4:09:50 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+4:10:00 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+4:10:00 AM [vite] page reload src/config/contracts.ts
+4:11:03 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+4:12:30 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+4:13:56 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+4:14:13 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+4:14:50 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+4:15:04 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+4:15:47 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+4:16:38 AM [vite] page reload src/config/contracts.ts
+4:16:56 AM [vite] hmr update /src/context/PriceContext.tsx, /src/styles.css
+4:18:02 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+4:18:45 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:20:37 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:21:44 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:22:45 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:23:35 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:24:00 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:24:23 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:24:50 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:25:55 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:27:51 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:28:23 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:28:39 AM [vite] hmr update /src/App.tsx, /src/styles.css
+4:29:00 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+4:30:13 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:31:15 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:32:09 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:33:29 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:34:58 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:35:18 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:38:11 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:39:12 AM [vite] hmr update /src/App.tsx, /src/styles.css
+4:39:31 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:40:06 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:42:00 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:42:48 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:43:07 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:45:34 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:45:52 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:46:11 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:47:54 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:51:02 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+4:52:32 AM [vite] hmr update /src/App.tsx, /src/styles.css
+4:53:24 AM [vite] hmr update /src/components/Header.tsx, /src/styles.css
+5:01:14 AM [vite] page reload src/config/contracts.ts
+5:01:38 AM [vite] page reload src/config/contracts.ts
+5:03:09 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:04:39 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:05:30 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:06:06 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:06:29 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:07:03 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:07:20 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:07:32 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:09:27 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:14:09 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:14:28 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:14:48 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:15:13 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:16:10 AM [vite] hmr update /src/context/PriceContext.tsx, /src/styles.css
+5:16:27 AM [vite] hmr update /src/context/PriceContext.tsx, /src/styles.css
+5:17:56 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:18:08 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:18:21 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:20:09 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:26:20 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:26:34 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:26:49 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+5:27:01 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+5:27:12 AM [vite] hmr update /src/components/FarmPanel.tsx, /src/styles.css
+5:28:03 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:28:18 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:28:43 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+5:29:08 AM [vite] hmr update /src/components/FarmPanel.tsx, /src/styles.css
+5:34:54 AM [vite] page reload src/config/contracts.ts
+5:36:42 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:37:51 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:38:09 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:38:56 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:39:23 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:40:30 AM [vite] hmr update /src/components/PoolsPanel.tsx, /src/styles.css
+5:41:37 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:42:15 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:42:34 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:45:34 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:47:03 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:47:36 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:49:45 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:51:01 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:51:52 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:54:39 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+5:56:30 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+5:58:21 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+6:02:33 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+6:03:35 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+6:05:01 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+6:06:50 AM [vite] hmr update /src/App.tsx, /src/styles.css
+6:08:16 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+6:09:41 AM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+6:11:12 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+6:12:28 AM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+6:16:41 AM [vite] hmr update /src/components/MarketStats.tsx, /src/styles.css
+6:18:11 AM [vite] hmr update /src/components/Logo.tsx, /src/styles.css
+6:28:14 AM [vite] hmr update /src/components/MarketStats.tsx, /src/styles.css
+6:28:30 AM [vite] hmr update /src/components/MarketStats.tsx, /src/styles.css
+3:13:09 PM [vite] page reload src/config/contracts.ts
+3:21:52 PM [vite] page reload src/config/contracts.ts
+3:29:29 PM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+3:43:24 PM [vite] page reload src/config/contracts.ts
+4:05:12 PM [vite] hmr update /src/components/SwapCard.tsx, /src/styles.css
+4:05:12 PM [vite] hmr update /src/components/MarketStats.tsx, /src/styles.css
+4:10:08 PM [vite] hmr update /src/components/Dashboard.tsx, /src/styles.css
+4:12:49 PM [vite] hmr update /src/components/ProfileModal.tsx, /src/styles.css

@@ -1,81 +1,85 @@
-import React, { useState } from "react";
-import { Header } from "./components/Header";
-import { SwapCard } from "./components/SwapCard";
-import { TradingViewChart as PriceChart } from "./components/PriceChart";
-import { TransactionPanel } from "./components/TransactionPanel";
-import { Logo } from "./components/Logo";
-import { ActivityTicker } from "./components/ActivityTicker";
-import { InvoiceForm } from "./components/InvoiceForm";
-import { PoolsPanel } from "./components/PoolsPanel";
-import { Dashboard } from "./components/Dashboard";
-import { Zap } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Header } from './components/Header';
+import { Dashboard } from './components/Dashboard';
+import { SwapCard } from './components/SwapCard';
+import { PoolsPanel } from './components/PoolsPanel';
+import { Leaderboard } from './components/Leaderboard';
+import { ActivityTicker } from './components/ActivityTicker';
+import { TradingChart } from './components/TradingChart';
+import { NotificationProvider } from './context/NotificationContext';
+import { TOKENS } from './config/contracts';
+import { Logo } from './components/Logo';
 
 export default function App() {
-  const [slippage, setSlippage] = useState('3.00');
   const [activeTab, setActiveTab] = useState('swap');
+  const [tokenIn, setTokenIn] = useState(TOKENS[1] || TOKENS[0]); 
+  const [tokenOut, setTokenOut] = useState(TOKENS[2] || TOKENS[0]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
+  const renderContent = () => {
+    try {
+      switch (activeTab) {
+        case 'dashboard': return <Dashboard />;
+        case 'swap': return (
+          <div className="flex flex-col lg:flex-row gap-6 items-start animate-in slide-in-from-bottom-4 duration-700 w-full">
+            <div className="hidden lg:block flex-1 h-[600px]">
+              <TradingChart tokenIn={tokenIn} tokenOut={tokenOut} />
+            </div>
+              <SwapCard 
+              tokenIn={tokenIn}
+              setTokenIn={setTokenIn}
+              tokenOut={tokenOut}
+              setTokenOut={setTokenOut}
+            />
+          </div>
+        );
+        case 'pools': return <PoolsPanel />;
+        case 'leaderboard': return <Leaderboard />;
+        default: return <Dashboard />;
+      }
+    } catch (err) {
+      console.error("Render error:", err);
+      return <div className="p-20 text-white">Error loading component. Check console.</div>;
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col selection:bg-white/10 relative">
-      <div className="bg-arcs">
-        <svg className="w-full h-full" viewBox="0 0 1000 1000" preserveAspectRatio="none" fill="none">
-          <path id="snake-path-1" className="arc-line" d="M -100 200 C 200 100, 400 900, 700 500 S 1200 800, 1500 200" stroke="white" strokeWidth="0.6" style={{ animationDuration: '14s' }} />
-          <path id="snake-path-2" className="arc-line" d="M -200 800 C 300 900, 100 100, 500 500 S 900 100, 1200 800" stroke="white" strokeWidth="0.4" style={{ animationDuration: '18s', animationDelay: '4s' }} />
-        </svg>
-      </div>
+    <NotificationProvider>
+      <div className="min-h-screen flex flex-col font-sans relative overflow-x-hidden bg-transparent">
+        {/* ATMOSPHERIC BACKGROUND HANDLED BY CSS */}
+        <div className="bg-orbs" />
 
-      <div className="bg-orbs">
-        <div className="orb orb-1" />
-        <div className="orb orb-2" />
-      </div>
-      
-      {/* Passing the required props to Header */}
-      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
-      
-      <div className="w-full bg-white/[0.02] border-b border-white/[0.05] py-2 px-8 relative overflow-hidden mt-20">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-12">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center gap-2 px-2 py-0.5 rounded-[12px] bg-blue-500/10 border border-blue-500/20">
-              <Zap size={10} className="text-blue-400" />
-              <span className="text-[9px] font-extrabold text-blue-400 uppercase tracking-widest">v2.0 Active</span>
+        <div className={`flex flex-col min-h-screen relative z-10 transition-opacity duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+          <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+          <div>
+            <ActivityTicker />
+          </div>
+          
+          <main className="flex-1 overflow-y-auto">
+            <div className="max-w-[1600px] mx-auto px-8 pt-7 pb-10">
+              {renderContent()}
             </div>
-          </div>
-          <div className="flex-1 overflow-hidden pointer-events-none">
-            <ActivityTicker isMinimal />
-          </div>
-        </div>
-      </div>
+          </main>
 
-      <main className="flex-1 flex flex-col items-center relative pt-8 pb-8 px-4 md:px-6">
-        {activeTab === 'swap' ? (
-          <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-[1fr_460px] gap-6 md:gap-12 items-stretch animate-in fade-in duration-700">
-            <div className="flex flex-col gap-4">
-              <div className="glass-frame h-[506px]">
-                <PriceChart />
+          <footer className="py-12 px-8 border-t border-white/[0.03] mt-auto bg-transparent">
+            <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+              <div className="flex items-center gap-12">
+                <Logo size={14} />
+                <div className="hidden md:flex items-center gap-8">
+                  {['Docs', 'Github', 'Twitter', 'Status'].map(link => (
+                    <a key={link} href="#" className="text-[9px] font-black text-white/20 hover:text-white uppercase tracking-[0.2em] transition-colors">{link}</a>
+                  ))}
+                </div>
               </div>
-              <TransactionPanel />
+              <div className="text-[8px] font-black text-white/10 uppercase tracking-[0.4em]">© 2026 ARCFX PROTOCOL. ALL RIGHTS RESERVED.</div>
             </div>
-            <div className="flex flex-col items-center gap-4">
-              <SwapCard slippage={slippage} setSlippage={setSlippage} />
-            </div>
-          </div>
-        ) : activeTab === 'invoices' ? (
-          <InvoiceForm />
-        ) : activeTab === 'pools' ? (
-          <PoolsPanel />
-        ) : activeTab === 'dashboard' ? (
-          <Dashboard />
-        ) : (
-          <div className="flex items-center justify-center h-64 text-white/20 uppercase tracking-[0.5em] font-black italic">
-            Coming Soon
-          </div>
-        )}
-      </main>
-
-      <footer className="py-12 px-8 border-t border-white/[0.05] bg-white/[0.01]">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-            <Logo />
+          </footer>
         </div>
-      </footer>
-    </div>
+      </div>
+    </NotificationProvider>
   );
 }

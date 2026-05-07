@@ -9,6 +9,7 @@ import { getDefaultConfig, RainbowKitProvider, darkTheme } from "@rainbow-me/rai
 import { WagmiProvider, http } from "wagmi";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { ARC_TESTNET_CONFIG } from "./config/contracts";
+import { PriceProvider } from "./context/PriceContext";
 
 const arcTestnet = {
   id: ARC_TESTNET_CONFIG.chainId,
@@ -42,7 +43,9 @@ ReactDOM.createRoot(rootElement).render(
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={darkTheme()} modalSize="compact">
-          <App />
+          <PriceProvider>
+            <App />
+          </PriceProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

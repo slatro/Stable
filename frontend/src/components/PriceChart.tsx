@@ -1,41 +1,72 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useMemo } from 'react';
 
-export const TradingViewChart = () => {
-  const container = useRef<HTMLDivElement>(null);
+interface PricePoint {
+  time: number;
+  value: number;
+}
 
-  useEffect(() => {
-    if (container.current) {
-      container.current.innerHTML = '';
-      const script = document.createElement("script");
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-      script.type = "text/javascript";
-      script.async = true;
-      script.innerHTML = JSON.stringify({
-        "autosize": true,
-        "symbol": "COINBASE:EURCUSDC",
-        "interval": "240", // 4H
-        "timezone": "Etc/UTC",
-        "theme": "dark",
-        "style": "1",
-        "locale": "en",
-        "enable_publishing": false,
-        "hide_top_toolbar": false,
-        "allow_symbol_change": true,
-        "save_image": false,
-        "calendar": false,
-        "hide_volume": true,
-        "support_host": "https://www.tradingview.com",
-        "backgroundColor": "rgba(3, 4, 11, 1)",
-        "gridColor": "rgba(255, 255, 255, 0.02)",
+export const PriceChart = ({ symbol }: { symbol: string }) => {
+  const data = useMemo(() => {
+    const points: PricePoint[] = [];
+    const now = Math.floor(Date.now() / 1000);
+    let lastPrice = 1.0;
+    
+    // Low-noise price generation with slight upward trend
+    for (let i = 0; i < 48; i++) {
+      const noise = (Math.random() - 0.48) * 0.001; // Slight upward bias
+      lastPrice = lastPrice * (1 + noise);
+      points.push({
+        time: now - (48 - i) * 3600,
+        value: lastPrice
       });
-      container.current.appendChild(script);
     }
-  }, []);
+    return points;
+  }, [symbol]);
+
+  const min = Math.min(...data.map(d => d.value));
+  const max = Math.max(...data.map(d => d.value));
+  const range = max - min;
+  const padding = range * 0.1;
+
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * 100;
+    const y = 100 - ((d.value - (min - padding)) / (range + padding * 2)) * 100;
+    return `${x},${y}`;
+  }).join(' ');
 
   return (
-    <div className="premium-card p-0 h-full overflow-hidden animate-fade-in relative group" style={{ minHeight: '500px' }}>
-      <div id="tradingview_widget" ref={container} style={{ height: "100%", width: "100%" }}></div>
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
+    <div className="w-full h-full relative group">
+      <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        
+        {/* Area fill */}
+        <path
+          d={`M 0,100 L ${points} L 100,100 Z`}
+          fill="url(#chartGradient)"
+          className="transition-all duration-1000"
+        />
+        
+        {/* Line */}
+        <polyline
+          fill="none"
+          stroke="#3b82f6"
+          strokeWidth="1.5"
+          points={points}
+          className="transition-all duration-1000"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      
+      {/* Interactive hover line placeholder */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <div className="absolute top-0 bottom-0 w-px bg-white/10 left-1/2" />
+      </div>
     </div>
   );
 };

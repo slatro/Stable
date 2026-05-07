@@ -17,14 +17,9 @@ export const Logo = ({ size, hideText = false }: LogoProps) => (
       }}
     >
       <img 
-        src="/assets/logo-real-final.jpg" 
+        src="/logo.png" 
         alt="ArcFX Logo"
-        className="w-full h-full object-contain mix-blend-screen"
-        style={{ 
-          filter: 'contrast(1.6) brightness(0.85) saturate(1.1)',
-          maskImage: 'radial-gradient(circle, black 60%, transparent 95%)',
-          WebkitMaskImage: 'radial-gradient(circle, black 60%, transparent 95%)'
-        }}
+        className="w-full h-full object-contain"
       />
     </div>
 
