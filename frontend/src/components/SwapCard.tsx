@@ -8,6 +8,7 @@ import FACTORY_ABI from '../abis/ArcFXFactory.json';
 import ROUTER_ABI from '../abis/ArcFXRouter.json';
 import ERC20_ABI from '../abis/ERC20.json';
 import { usePrices } from '../context/PriceContext';
+import { useNotifications } from '../context/NotificationContext';
 
 const PROTOCOL_TOKENS = TOKENS.filter(t => t.symbol !== 'EURC');
 const LS_KEY = 'arcfx_infinite_approvals_v1';
@@ -39,14 +40,24 @@ const TokenBox = ({ type, token, amount, setAmount, isReadOnly, userAddress, onT
       
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            disabled={isReadOnly}
-            placeholder="0.00"
-            className="w-full bg-transparent text-2xl font-black text-white outline-none placeholder:text-white/10 tabular-nums"
-          />
+          {type === 'From' ? (
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              disabled={isReadOnly}
+              placeholder="0.00"
+              className="w-full bg-transparent text-2xl font-black text-white outline-none placeholder:text-white/10 tabular-nums"
+            />
+          ) : (
+            <input 
+              type="text" 
+              value={amount}
+              readOnly
+              placeholder="0.00"
+              className="w-full bg-transparent text-2xl font-black text-white outline-none placeholder:text-white/10 tabular-nums"
+            />
+          )}
         </div>
         
         <div className="relative">
@@ -108,10 +119,18 @@ export const SwapCard = ({
   setTokenOut: (t: any) => void
 }) => {
   const { address, isConnected } = useAccount();
+  const { notify, dismiss, dismissAll } = useNotifications();
+  const lastNotifiedHash = useRef<string | null>(null);
   const [fromAmount, setFromAmount] = useState('');
   const [limitPrice, setLimitPrice] = useState('');
   const [activeTab, setActiveTab] = useState<'market' | 'limit' | 'stake'>('market');
   const [localAllowanceOverride, setLocalAllowanceOverride] = useState(false);
+  
+  // RESET ALLOWANCE OVERRIDE ON WALLET CHANGE
+  useEffect(() => {
+    setLocalAllowanceOverride(false);
+  }, [address]);
+
   const [showSettings, setShowSettings] = useState(false);
   const [isAutoSlippage, setIsAutoSlippage] = useState(true);
   const [internalSlippage, setInternalSlippage] = useState('0.5');
@@ -157,20 +176,27 @@ export const SwapCard = ({
     }
   }, [activeTab]);
 
-  const { data: pairAddress } = useReadContract({
+  const { data: pairAddressRaw } = useReadContract({
     address: CONTRACT_ADDRESSES.FACTORY as `0x${string}`,
-    abi: FACTORY_ABI as any,
-    functionName: 'getPair',
+    abi: FACTORY_ABI.abi || FACTORY_ABI as any,
+    functionName: 'getPool',
     args: tokenIn && tokenOut ? [tokenIn.addr, tokenOut.addr] : undefined,
     query: { enabled: !!tokenIn && !!tokenOut }
   });
 
-  const { data: allowance } = useReadContract({
+  const pairAddress = useMemo(() => {
+    if (!pairAddressRaw || pairAddressRaw === '0x0000000000000000000000000000000000000000') return null;
+    return pairAddressRaw as `0x${string}`;
+  }, [pairAddressRaw]);
+
+  const spenderAddress = activeTab === 'limit' ? (pairAddress as `0x${string}`) : (CONTRACT_ADDRESSES.ROUTER as `0x${string}`);
+
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: tokenIn?.addr as `0x${string}`,
-    abi: ERC20_ABI,
+    abi: ERC20_ABI.abi || ERC20_ABI,
     functionName: 'allowance',
-    args: address && tokenIn ? [address, CONTRACT_ADDRESSES.ROUTER] : undefined,
-    query: { enabled: !!tokenIn && !!address }
+    args: address && tokenIn && spenderAddress ? [address, spenderAddress] : undefined,
+    query: { enabled: !!tokenIn && !!address && !!spenderAddress }
   });
 
   const needsApproval = isConnected && !localAllowanceOverride && (
@@ -180,61 +206,176 @@ export const SwapCard = ({
     allowance < parseUnits(fromAmount || '0', tokenIn?.decimals || 18)
   );
 
-  const { data: approveHash, writeContract: approveWrite, isPending: isApprovePending } = useWriteContract();
-  const { isLoading: isApproveConfirming } = useWaitForTransactionReceipt({ hash: approveHash });
+  const { data: actionHash, writeContract: actionWrite, isPending: isActionPending, error: actionError, reset: resetAction } = useWriteContract();
+  const { isLoading: isActionConfirming, isSuccess: isActionSuccess, error: actionWaitError } = useWaitForTransactionReceipt({ hash: actionHash });
 
-  const { prices, recordTrade, liquidity } = usePrices();
+  // HANDLE TRANSACTION ERRORS
+  useEffect(() => {
+    if (actionError || actionWaitError) {
+      dismissAll(); // Clear all pending loaders
+      const errorMsg = (actionError as any)?.shortMessage || (actionError as any)?.message || "Transaction failed";
+      notify({ type: 'error', title: 'Transaction Error', message: errorMsg });
+      if (resetAction) resetAction();
+    }
+  }, [actionError, actionWaitError, notify, dismissAll, resetAction]);
+
+  const { data: approveHash, writeContract: approveWrite, isPending: isApprovePending, error: approveError, reset: resetApprove } = useWriteContract();
+  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({ hash: approveHash });
+
+  useEffect(() => {
+    if (approveError) {
+      dismissAll(); // Clear all pending loaders
+      notify({ type: 'error', title: 'Approval Failed', message: (approveError as any)?.shortMessage || "User rejected the request" });
+      if (resetApprove) resetApprove();
+    }
+  }, [approveError, notify, dismissAll, resetApprove]);
+
+  useEffect(() => {
+    if (isApproveSuccess) {
+      dismissAll(); // Force clear the "Authorization Required" loader
+      refetchAllowance();
+      setLocalAllowanceOverride(true);
+      notify({ type: 'success', title: 'Approval Confirmed', message: `${tokenIn?.symbol} authorized for trading.`, txHash: approveHash });
+      
+      // Safety: dismissAll again after 3 seconds to ensure nothing is stuck
+      setTimeout(() => dismissAll(), 3000);
+    }
+  }, [isApproveSuccess, refetchAllowance, approveHash, tokenIn, notify, dismissAll]);
+
+  const priceContext = usePrices();
+  const prices = priceContext?.prices || {};
+  const recordTrade = priceContext?.recordTrade || (() => {});
+  const liquidity = priceContext?.liquidity || 0;
   const { data: gasPrice } = useGasPrice();
 
-  const toAmount = useMemo(() => {
-    if (!fromAmount || isNaN(parseFloat(fromAmount)) || !tokenIn || !tokenOut) return '';
+  const { data: poolAmountOut } = useReadContract({
+    address: pairAddress as `0x${string}`,
+    abi: AMM_ABI.abi || AMM_ABI as any,
+    functionName: 'getAmountOut',
+    args: tokenIn && fromAmount && !isNaN(parseFloat(fromAmount)) ? [parseUnits(fromAmount, tokenIn.decimals), tokenIn.addr] : undefined,
+    query: { enabled: !!pairAddress && !!tokenIn && !!fromAmount && !isNaN(parseFloat(fromAmount)), refetchInterval: 3000 }
+  });
+
+  // GET MID-PRICE FROM POOL (Price for 1 unit to get pure spot price)
+  const { data: midPriceRaw } = useReadContract({
+    address: pairAddress as `0x${string}`,
+    abi: AMM_ABI.abi || AMM_ABI as any,
+    functionName: 'getAmountOut',
+    args: tokenIn ? [parseUnits("1", tokenIn.decimals), tokenIn.addr] : undefined,
+    query: { enabled: !!pairAddress && !!tokenIn, refetchInterval: 5000 }
+  });
+
+  const visualToAmountRaw = useMemo(() => {
+    if (!fromAmount || isNaN(parseFloat(fromAmount)) || !tokenIn || !tokenOut) return 0n;
     const priceIn = prices[tokenIn.symbol]?.price || 1;
     const priceOut = prices[tokenOut.symbol]?.price || 1;
-    return (parseFloat(fromAmount) * priceIn / priceOut).toFixed(tokenOut.decimals === 6 ? 2 : 4);
+    const estimated = parseFloat(fromAmount) * (priceIn / priceOut);
+    try {
+      return parseUnits(estimated.toFixed(tokenOut.decimals), tokenOut.decimals);
+    } catch (e) { return 0n; }
   }, [fromAmount, tokenIn, tokenOut, prices]);
 
+  const toAmount = useMemo(() => {
+    if (visualToAmountRaw === 0n || !tokenOut) return '';
+    return parseFloat(formatUnits(visualToAmountRaw, tokenOut.decimals)).toFixed(6);
+  }, [visualToAmountRaw, tokenOut]);
+
+  const minReceived = useMemo(() => {
+    const baseAmount = (poolAmountOut && (poolAmountOut as bigint) > 0n) 
+      ? (poolAmountOut as bigint) 
+      : visualToAmountRaw;
+
+    if (baseAmount === 0n || !tokenOut) return '0.00';
+    const slippageVal = parseFloat(internalSlippage) / 100;
+    const factor = BigInt(Math.floor((1 - slippageVal) * 10000));
+    return formatUnits((baseAmount * factor) / 10000n, tokenOut.decimals);
+  }, [poolAmountOut, visualToAmountRaw, tokenOut, internalSlippage]);
+
   const priceImpact = useMemo(() => {
-    if (!fromAmount || !tokenIn || !prices[tokenIn.symbol]) return "0.01";
-    const amountUsd = parseFloat(fromAmount) * (prices[tokenIn.symbol]?.price || 1);
-    // Simple impact formula: (Trade / Pool) * 100, scaled for demo
-    const impact = (amountUsd / liquidity) * 100;
-    return Math.max(0.01, impact).toFixed(2);
-  }, [fromAmount, tokenIn, prices, liquidity]);
+    if (!visualToAmountRaw || !fromAmount || !tokenIn || !tokenOut || !midPriceRaw) return "0.000";
+    
+    // Get the POOL'S OWN SPOT PRICE (Mid-price) after factoring out fee
+    // 1 unit trade output from contract already includes fee, so we normalize it
+    const spotPrice = parseFloat(formatUnits(midPriceRaw as bigint, tokenOut.decimals)) / 0.999;
+    
+    // Get actual user execution ratio (factored for fee)
+    const ammAmountOut = (poolAmountOut && (poolAmountOut as bigint) > 0n) 
+      ? parseFloat(formatUnits(poolAmountOut as bigint, tokenOut.decimals))
+      : parseFloat(formatUnits(visualToAmountRaw, tokenOut.decimals));
+      
+    const executionPrice = ammAmountOut / parseFloat(fromAmount) / 0.999;
+    
+    if (executionPrice >= spotPrice) return "0.000";
+    const impact = ((spotPrice - executionPrice) / spotPrice) * 100;
+    return impact.toFixed(3);
+  }, [poolAmountOut, midPriceRaw, fromAmount, tokenIn, tokenOut, visualToAmountRaw]);
 
   const networkFee = useMemo(() => {
     if (!gasPrice) return '$0.001';
-    // Assume 200k gas for swap * gasPrice
     const feeNative = Number(gasPrice) * 200000;
     const feeUsd = (feeNative / 1e18) * (prices['aUSDC']?.price || 1);
-    if (feeUsd < 0.001) return '< $0.001';
-    return `~$${feeUsd.toFixed(4)}`;
+    return feeUsd < 0.001 ? '< $0.001' : `~$${feeUsd.toFixed(4)}`;
   }, [gasPrice, prices]);
-
-  const { data: actionHash, writeContract: actionWrite, isPending: isActionPending } = useWriteContract();
-  const { isLoading: isActionConfirming, isSuccess: isActionSuccess } = useWaitForTransactionReceipt({ hash: actionHash });
 
   // UPDATE GLOBAL STATS ON SUCCESS
   useEffect(() => {
-    if (isActionSuccess && fromAmount && tokenIn) {
-      const price = prices[tokenIn.symbol]?.price || 1;
-      const usdValue = parseFloat(fromAmount) * price;
+    if (isActionSuccess && actionHash && lastNotifiedHash.current !== actionHash) {
+      lastNotifiedHash.current = actionHash;
+      dismissAll(); // Clear the "Transaction Pending" loader immediately
+      
+      const price = tokenIn ? prices[tokenIn.symbol]?.price || 1 : 1;
+      const usdValue = fromAmount ? parseFloat(fromAmount) * price : 0;
       if (usdValue > 0) recordTrade(usdValue);
+      
+      notify({ 
+        type: 'success', 
+        title: 'Swap Successful', 
+        message: `Exchanged ${fromAmount} ${tokenIn?.symbol} for ${toAmount} ${tokenOut?.symbol}`,
+        txHash: actionHash 
+      });
+      setFromAmount('');
+      
+      // Safety cleanup
+      setTimeout(() => dismissAll(), 4000);
     }
-  }, [isActionSuccess, fromAmount, tokenIn, prices, recordTrade]);
+  }, [isActionSuccess, actionHash, fromAmount, tokenIn, prices, recordTrade, toAmount, tokenOut, notify, dismissAll]);
 
   const handleAction = async () => {
     if (!isConnected || !address || !tokenIn || !tokenOut) return;
 
-    if (needsApproval && tokenIn) {
-      approveWrite({ address: tokenIn.addr as `0x${string}`, abi: ERC20_ABI, functionName: 'approve', args: [CONTRACT_ADDRESSES.ROUTER, maxUint256] });
-      setLocalAllowanceOverride(true);
+    if (needsApproval && tokenIn && spenderAddress) {
+      notify({ type: 'loading', title: 'Authorization Required', message: `Approving ${tokenIn.symbol}...` });
+      approveWrite({ 
+        address: tokenIn.addr as `0x${string}`, 
+        abi: ERC20_ABI.abi || ERC20_ABI, 
+        functionName: 'approve', 
+        args: [spenderAddress, maxUint256] 
+      });
     } else {
+      const msg = activeTab === 'limit' ? 'Placing limit order...' : (activeTab === 'stake' ? (isUnstake ? 'Unstaking assets...' : 'Staking assets...') : 'Exchanging tokens...');
+      notify({ type: 'loading', title: 'Transaction Pending', message: msg });
+      
       if (activeTab === 'limit') {
-        actionWrite({ address: pairAddress as `0x${string}`, abi: AMM_ABI as any, functionName: 'placeLimitOrder', args: [tokenIn.addr, parseUnits(fromAmount, tokenIn.decimals), parseUnits(limitPrice, tokenOut.decimals)] });
-      } else if (activeTab === 'stake') {
-        actionWrite({ address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`, abi: ROUTER_ABI as any, functionName: 'swapExactTokensForTokens', args: [parseUnits(fromAmount, tokenIn.decimals), 0n, [tokenIn.addr, tokenOut.addr], address, BigInt(Math.floor(Date.now() / 1000) + 1200)] });
+        actionWrite({ 
+          address: pairAddress as `0x${string}`, 
+          abi: AMM_ABI.abi || AMM_ABI as any, 
+          functionName: 'placeLimitOrder', 
+          args: [tokenIn.addr, parseUnits(fromAmount, tokenIn.decimals), parseUnits(limitPrice, tokenOut.decimals)] 
+        });
       } else {
-        actionWrite({ address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`, abi: ROUTER_ABI as any, functionName: 'swapExactTokensForTokens', args: [parseUnits(fromAmount, tokenIn.decimals), 0n, [tokenIn.addr, tokenOut.addr], address, BigInt(Math.floor(Date.now() / 1000) + 1200)] });
+        const minOutRaw = parseUnits(minReceived, tokenOut.decimals);
+        actionWrite({ 
+          address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`, 
+          abi: ROUTER_ABI.abi || ROUTER_ABI as any, 
+          functionName: 'swapExactTokensForTokens', 
+          args: [
+            parseUnits(fromAmount, tokenIn.decimals), 
+            minOutRaw, 
+            [tokenIn.addr, tokenOut.addr], 
+            address, 
+            BigInt(Math.floor(Date.now() / 1000) + 1200)
+          ] 
+        });
       }
     }
   };
@@ -359,40 +500,29 @@ export const SwapCard = ({
                 </div>
               </div>
           ) : activeTab === 'market' ? (
-            <div className="flex flex-col gap-3 py-2 px-1">
-              <div className="flex justify-between items-center group">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400/20 flex items-center justify-center">
-                    <div className="w-0.5 h-0.5 rounded-full bg-emerald-400" />
-                  </div>
-                  <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Price Impact</span>
-                </div>
-                <span className={`text-[10px] font-black tabular-nums ${parseFloat(priceImpact.toString()) > 1 ? 'text-red-400' : 'text-emerald-400/90'}`}>
-                  {parseFloat(priceImpact.toString()) < 0.01 ? '< 0.01%' : `${priceImpact}%`}
+            <div className="flex flex-col gap-2 py-1 px-1 mt-3 animate-in fade-in slide-in-from-top-1 duration-400">
+              <div className="flex justify-between items-center group/item">
+                <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Price Impact</span>
+                <span className={`text-[10px] font-black tabular-nums ${parseFloat(priceImpact) > 0.05 ? 'text-red-400' : (parseFloat(priceImpact) > 0 ? 'text-red-400/70' : 'text-emerald-400/90')}`}>
+                  {parseFloat(priceImpact.toString()) < 0.01 ? '0.000%' : `${priceImpact}%`}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center group">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400/20 flex items-center justify-center">
-                    <div className="w-0.5 h-0.5 rounded-full bg-blue-400" />
-                  </div>
-                  <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Min. Received</span>
-                </div>
+              <div className="flex justify-between items-center group/item">
+                <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Min. Received</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black text-white/70 tabular-nums italic">{toAmount}</span>
-                  <span className="text-[9px] font-black text-blue-400/80 uppercase tracking-tighter">{tokenOut?.symbol || '...'}</span>
+                  <span className="text-[10px] font-black text-white/60 tabular-nums italic">
+                    {parseFloat(minReceived).toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                  </span>
+                  <span className="text-[8px] font-black text-blue-400/40 uppercase">{tokenOut?.symbol || '...'}</span>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center group">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-400/20 flex items-center justify-center">
-                    <div className="w-0.5 h-0.5 rounded-full bg-purple-400" />
-                  </div>
-                  <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Network Fee</span>
-                </div>
-                <span className="text-[10px] font-black text-white/50 tabular-nums">{networkFee}</span>
+              <div className="mt-1 pt-2 border-t border-white/[0.03] flex justify-between items-center opacity-40 hover:opacity-100 transition-opacity">
+                <span className="text-[7px] font-bold text-white uppercase tracking-widest">Est. Fees</span>
+                <span className="text-[8px] font-black text-white/60 tabular-nums">
+                  0.10% + {networkFee}
+                </span>
               </div>
             </div>
           ) : activeTab === 'stake' ? (

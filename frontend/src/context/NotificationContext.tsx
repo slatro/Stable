@@ -15,6 +15,7 @@ interface Notification {
 interface NotificationContextType {
   notify: (notification: Omit<Notification, 'id'>) => string;
   dismiss: (id: string) => void;
+  dismissAll: () => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -24,6 +25,10 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
   const dismiss = useCallback((id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  const dismissAll = useCallback(() => {
+    setNotifications([]);
   }, []);
 
   const notify = useCallback((n: Omit<Notification, 'id'>) => {
@@ -38,7 +43,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   }, [dismiss]);
 
   return (
-    <NotificationContext.Provider value={{ notify, dismiss }}>
+    <NotificationContext.Provider value={{ notify, dismiss, dismissAll }}>
       {children}
       
       {/* TOASTER OVERLAY */}

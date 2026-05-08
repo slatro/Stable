@@ -12,8 +12,8 @@ import { Logo } from './components/Logo';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('swap');
-  const [tokenIn, setTokenIn] = useState(TOKENS[1] || TOKENS[0]); 
-  const [tokenOut, setTokenOut] = useState(TOKENS[2] || TOKENS[0]);
+  const [tokenIn, setTokenIn] = useState(TOKENS.find(t => t.symbol === 'aUSDC') || TOKENS[2]);
+  const [tokenOut, setTokenOut] = useState(TOKENS.find(t => t.symbol === 'aEURC') || TOKENS[3]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function App() {
             <div className="hidden lg:block flex-1 h-[600px]">
               <TradingChart tokenIn={tokenIn} tokenOut={tokenOut} />
             </div>
-              <SwapCard 
+            <SwapCard
               tokenIn={tokenIn}
               setTokenIn={setTokenIn}
               tokenOut={tokenOut}
@@ -58,7 +58,7 @@ export default function App() {
           <div>
             <ActivityTicker />
           </div>
-          
+
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-[1600px] mx-auto px-8 pt-7 pb-10">
               {renderContent()}

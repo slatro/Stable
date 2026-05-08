@@ -1,15 +1,22 @@
 import React from 'react';
 import { TOKENS } from '../config/contracts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { usePrices } from '../context/PriceContext';
 
 export const ActivityTicker = () => {
-  // Use platform tokens for the ticker
-  const tickerItems = TOKENS.slice(1).map((t, i) => ({
-    symbol: t.symbol,
-    price: i === 0 ? '1.0000' : i === 1 ? '1.0852' : i === 2 ? '0.0304' : i === 3 ? '1.2741' : '0.0067',
-    change: (Math.random() * 0.5 - 0.2).toFixed(2),
-    isUp: Math.random() > 0.4
-  }));
+  const priceContext = usePrices();
+  const prices = priceContext?.prices || {};
+  
+  // Only show synthetic a-Assets in the ticker
+  const tickerItems = TOKENS.filter(t => t.symbol.startsWith('a') && t.symbol !== 'astUSDC').map((t) => {
+    const pData = prices[t.symbol] || { price: 0, change24h: '+0.00%' };
+    return {
+      symbol: t.symbol,
+      price: pData.price > 1 ? pData.price.toFixed(4) : pData.price.toFixed(6),
+      change: pData.change24h,
+      isUp: !pData.change24h.startsWith('-')
+    };
+  }).filter(item => parseFloat(item.price) > 0);
 
   // Duplicate for seamless loop
   const displayItems = [...tickerItems, ...tickerItems, ...tickerItems, ...tickerItems];
@@ -49,7 +56,7 @@ export const ActivityTicker = () => {
       </div>
 
       {/* Network Status - FIXED ON THE RIGHT */}
-      <div className="h-full flex items-center px-6 bg-black/40 border-l border-white/10 z-20 backdrop-blur-xl">
+      <div className="h-full flex items-center px-6 bg-white/[0.08] border-l border-white/10 z-20 backdrop-blur-xl">
         <div className="flex items-center gap-2.5">
           <div className="relative">
             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />

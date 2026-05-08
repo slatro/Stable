@@ -82,8 +82,8 @@ contract ArcFXAMM is ReentrancyGuard, Ownable {
         uint256 normResIn = _normalize(resIn, decIn);
         uint256 normResOut = _normalize(resOut, decOut);
 
-        // 0.3% Fee
-        uint256 amountInWithFee = (normIn * 997) / 1000;
+        // 0.1% Fee (Reduced from 0.3%)
+        uint256 amountInWithFee = (normIn * 999) / 1000;
         uint256 normOut = (amountInWithFee * normResOut) / (normResIn + amountInWithFee);
         amountOut = _denormalize(normOut, decOut);
 
@@ -121,7 +121,7 @@ contract ArcFXAMM is ReentrancyGuard, Ownable {
         (uint8 decIn, uint8 decOut) = isToken0 ? (decimals0, decimals1) : (decimals1, decimals0);
         
         uint256 normIn = _normalize(amountIn, decIn);
-        uint256 amountInWithFee = (normIn * 997) / 1000;
+        uint256 amountInWithFee = (normIn * 999) / 1000;
         uint256 normOut = (amountInWithFee * _normalize(resOut, decOut)) / (_normalize(resIn, decIn) + amountInWithFee);
         return _denormalize(normOut, decOut);
     }

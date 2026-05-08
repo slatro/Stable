@@ -7,6 +7,7 @@ import { Logo } from './Logo';
 import { ProfileModal, AVATARS } from './ProfileModal';
 import { CONTRACT_ADDRESSES, TOKENS } from '../config/contracts';
 import ERC20_ABI from '../abis/ERC20.json';
+import FAUCET_ABI from '../abis/ArcMultiFaucet.json';
 
 export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) => {
   const { address, isConnected } = useAccount();
@@ -17,13 +18,13 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('arc_avatar');
+    const saved = localStorage.getItem('arc_profile_avatar');
     if (saved) setSelectedAvatar(saved);
-  }, []);
+  }, [isProfileOpen]); // Refresh when profile opens/closes to stay in sync
 
   const handleSetAvatar = (url: string) => {
     setSelectedAvatar(url);
-    localStorage.setItem('arc_avatar', url);
+    localStorage.setItem('arc_profile_avatar', url);
   };
 
   const { data: rawUsdcBalance } = useReadContract({
@@ -77,39 +78,10 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
     try {
       if (!address) return;
       
-      const faucetAssets = [
-        { addr: CONTRACT_ADDRESSES.aUSDC, decimals: 6, symbol: 'aUSDC' },
-        { addr: CONTRACT_ADDRESSES.aEURC, decimals: 18, symbol: 'aEURC' },
-        { addr: CONTRACT_ADDRESSES.aTRYC, decimals: 18, symbol: 'aTRYC' },
-        { addr: CONTRACT_ADDRESSES.aGBPC, decimals: 18, symbol: 'aGBPC' },
-        { addr: CONTRACT_ADDRESSES.aJPYC, decimals: 18, symbol: 'aJPYC' }
-      ];
-
-      const tokenAddresses = faucetAssets.map(a => a.addr as `0x${string}`);
-      const amounts = faucetAssets.map(a => {
-        let baseAmount = 10;
-        if (a.symbol === 'aTRYC') baseAmount = 500;
-        else if (a.symbol === 'aJPYC') baseAmount = 3000;
-        return BigInt(baseAmount) * BigInt(10 ** a.decimals);
-      });
-
       faucetWrite({
         address: CONTRACT_ADDRESSES.MULTI_FAUCET as `0x${string}`,
-        abi: [
-          {
-            "inputs": [
-              { "internalType": "address[]", "name": "tokens", "type": "address[]" },
-              { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" },
-              { "internalType": "address", "name": "to", "type": "address" }
-            ],
-            "name": "getTokens",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-          }
-        ],
-        functionName: 'getTokens',
-        args: [tokenAddresses, amounts, address]
+        abi: FAUCET_ABI.abi as any,
+        functionName: 'claim',
       });
     } catch (err) {
       console.error("Faucet error:", err);
@@ -118,17 +90,17 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
 
   return (
     <>
-      <header className="w-full h-[76px] flex items-center justify-start z-50 transition-all border-b border-white/[0.03] backdrop-blur-md">
-        <div className="w-full px-8 flex items-center gap-12">
+      <header className="w-full h-[76px] flex items-center z-50 border-b border-white/[0.03] backdrop-blur-md">
+        <div className="w-full px-8 flex items-center justify-between">
+          {/* LEFT SIDE: Logo & Nav */}
           <div className="flex items-center gap-10">
             <Logo />
-            
-            <nav className="flex items-center p-1 bg-white/[0.03] border border-white/[0.05] rounded-xl">
+            <nav className="flex items-center p-1 bg-white/[0.03] border border-white/[0.05] rounded-md">
               {['dashboard', 'swap', 'pools', 'leaderboard'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${
+                  className={`px-5 py-1.5 rounded-md text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${
                     activeTab === tab 
                       ? "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]" 
                       : "text-white/50 hover:text-white"
@@ -140,88 +112,83 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
             </nav>
           </div>
 
-          <div className="flex-1" /> {/* Spacer to keep right group on the right but allow flexibility */}
+          {/* RIGHT SIDE: Faucet & Wallet */}
+          <div className="flex items-center gap-4">
+            {/* FAUCET BUTTONS */}
+            <div className="flex items-center gap-2">
+              {(() => {
+                const nowUnix = Math.floor(Date.now() / 1000);
+                const inCooldown = localLastMint > 0 && (nowUnix - localLastMint) < 86400;
+                const cooldownRemaining = 86400 - (nowUnix - localLastMint);
+                const cooldownHours = Math.floor(cooldownRemaining / 3600);
+                const cooldownMinutes = Math.floor((cooldownRemaining % 3600) / 60);
+                const faucetDisabled = !isConnected || isFaucetPending || isFaucetConfirming || inCooldown;
 
+                return (
+                  <button 
+                    onClick={handleFaucet}
+                    disabled={faucetDisabled}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md border transition-all duration-500 shadow-xl group ${
+                      !isConnected ? 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed' : 
+                      inCooldown ? 'bg-white/5 border-white/10 text-white/40 cursor-not-allowed' :
+                      'bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-blue-500/20 text-blue-400 hover:scale-105 active:scale-95'
+                    }`}
+                  >
+                    {isFaucetPending || isFaucetConfirming ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : inCooldown ? (
+                      <ShieldCheck size={12} className="text-white/40" />
+                    ) : (
+                      <Zap size={12} className="text-purple-400" />
+                    )}
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em]">
+                      {inCooldown ? `Wait ${cooldownHours}h ${cooldownMinutes}m` : 'ArcFX Faucet'}
+                    </span>
+                  </button>
+                );
+              })()}
 
-        {/* RIGHT SIDE GROUP */}
-        <div className="flex items-center gap-4">
-          {/* FAUCET BUTTONS */}
-          <div className="flex items-center gap-2">
-            {(() => {
-              const nowUnix = Math.floor(Date.now() / 1000);
-              const inCooldown = localLastMint > 0 && (nowUnix - localLastMint) < 86400;
-              const cooldownRemaining = 86400 - (nowUnix - localLastMint);
-              const cooldownHours = Math.floor(cooldownRemaining / 3600);
-              const cooldownMinutes = Math.floor((cooldownRemaining % 3600) / 60);
-              const faucetDisabled = !isConnected || isFaucetPending || isFaucetConfirming || inCooldown;
+              <a 
+                href="https://faucet.circle.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:scale-105 transition-all duration-500 shadow-[0_0_20px_rgba(59,130,246,0.2)] active:scale-95 group"
+              >
+                <ExternalLink size={10} className="text-blue-400" />
+                <span className="text-[9px] font-black uppercase tracking-[0.2em]">Circle Faucet</span>
+              </a>
+            </div>
 
-              return (
-                <button 
-                  onClick={handleFaucet}
-                  disabled={faucetDisabled}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-500 shadow-xl group ${
-                    !isConnected ? 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed' : 
-                    inCooldown ? 'bg-white/5 border-white/10 text-white/40 cursor-not-allowed' :
-                    'bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-blue-500/20 text-blue-400 hover:scale-105 active:scale-95'
-                  }`}
-                >
-                  {isFaucetPending || isFaucetConfirming ? (
-                    <Loader2 size={12} className="animate-spin" />
-                  ) : inCooldown ? (
-                    <ShieldCheck size={12} className="text-white/40" />
-                  ) : (
-                    <Zap size={12} className="text-purple-400" />
-                  )}
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                    {inCooldown ? `Wait ${cooldownHours}h ${cooldownMinutes}m` : 'ArcFX Faucet'}
+            {/* WALLET CONNECTION */}
+            {!isConnected ? (
+              <button 
+                onClick={openConnectModal}
+                className="px-6 py-3 rounded-md bg-white text-black font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+              >
+                Connect Wallet
+              </button>
+            ) : (
+              <button 
+                onClick={() => setIsProfileOpen(true)}
+                className="group flex items-center h-9 rounded-md bg-white/[0.03] border border-white/10 hover:border-blue-500/30 hover:bg-white/[0.06] transition-all pl-3 pr-1.5 gap-3 backdrop-blur-xl"
+              >
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-black text-white leading-none mb-0.5">
+                    {formattedNative} <span className="text-blue-400">USDC</span>
                   </span>
-                </button>
-              );
-            })()}
-
-            <a 
-              href="https://faucet.circle.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:scale-105 transition-all duration-500 shadow-[0_0_20px_rgba(59,130,246,0.2)] active:scale-95 group"
-            >
-              <ExternalLink size={10} className="text-blue-400" />
-              <span className="text-[9px] font-black uppercase tracking-[0.2em]">Circle Faucet</span>
-            </a>
-          </div>
-
-
-
-          {/* WALLET CONNECTION */}
-          {!isConnected ? (
-            <button 
-              onClick={openConnectModal}
-              className="px-6 py-3 rounded-xl bg-white text-black font-black text-[10px] uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)]"
-            >
-              Connect Wallet
-            </button>
-          ) : (
-            <button 
-              onClick={() => setIsProfileOpen(true)}
-              className="group flex items-center h-9 rounded-xl bg-white/[0.03] border border-white/10 hover:border-blue-500/30 hover:bg-white/[0.06] transition-all pl-3 pr-1.5 gap-3 backdrop-blur-xl"
-            >
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-black text-white leading-none mb-0.5">
-                  {formattedNative} <span className="text-blue-400">USDC</span>
-                </span>
-                <span className="text-[8px] font-bold text-white/30 uppercase tracking-tighter">
-                  {address?.slice(0, 6)}...{address?.slice(-4)}
-                </span>
-              </div>
-              <div className="h-4 w-px bg-white/10" />
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full border border-white/10 p-0.5 bg-black/40 group-hover:scale-110 transition-transform relative overflow-hidden">
-                  <img src={selectedAvatar} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                  <span className="text-[8px] font-bold text-white/30 uppercase tracking-tighter">
+                    {address?.slice(0, 6)}...{address?.slice(-4)}
+                  </span>
                 </div>
-                <ChevronDown size={8} className="text-white/20 group-hover:text-blue-400 group-hover:rotate-180 transition-all mr-1" />
-              </div>
-            </button>
-          )}
+                <div className="h-4 w-px bg-white/10" />
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-md border border-white/10 p-0.5 bg-black/40 group-hover:scale-110 transition-transform relative overflow-hidden">
+                    <img src={selectedAvatar} alt="Profile" className="w-full h-full rounded-md object-cover" />
+                  </div>
+                  <ChevronDown size={8} className="text-white/20 group-hover:text-blue-400 group-hover:rotate-180 transition-all mr-1" />
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </header>

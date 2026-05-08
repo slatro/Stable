@@ -5,26 +5,106 @@ import { usePrices } from '../context/PriceContext';
 const CG = 'https://api.coingecko.com/api/v3';
 
 // Configuration: id = coingecko coin id, vs = currency, invert = if true, price = 1 / fetched_price
-const PAIR_CFG: Record<string, { id: string; vs: string; label: string; invert?: boolean }> = {
-  'aUSDC/aTRYC':   { id: 'usd-coin',   vs: 'try', label: 'USDC / TRY' },
-  'aUSDC/aEURC':   { id: 'usd-coin',   vs: 'eur', label: 'USDC / EUR' },
-  'aUSDC/aGBPC':   { id: 'usd-coin',   vs: 'gbp', label: 'USDC / GBP' },
-  'aUSDC/aJPYC':   { id: 'usd-coin',   vs: 'jpy', label: 'USDC / JPY' },
-  'aEURC/aUSDC':   { id: 'euro-coin',  vs: 'usd', label: 'EUR / USD'  },
-  'aEURC/aTRYC':   { id: 'euro-coin',  vs: 'try', label: 'EUR / TRY'  },
-  'aGBPC/aUSDC':   { id: 'usd-coin',   vs: 'gbp', label: 'GBP / USD', invert: true },
-  'aJPYC/aUSDC':   { id: 'usd-coin',   vs: 'jpy', label: 'JPY / USD', invert: true },
-  'aTRYC/aUSDC':   { id: 'usd-coin',   vs: 'try', label: 'TRY / USD', invert: true },
-  'aUSDC/astUSDC': { id: 'usd-coin',   vs: 'usd', label: 'USDC / USD' },
-  'astUSDC/aUSDC': { id: 'usd-coin',   vs: 'usd', label: 'USDC / USD' },
+const getCGId = (sym: string) => {
+  const map: Record<string, string> = {
+    'USDC': 'usd-coin', 'aUSDC': 'usd-coin',
+    'EURC': 'euro-coin', 'aEURC': 'euro-coin',
+    'TRYC': 'tether-try', 'aTRYC': 'tether-try',
+    'GBPC': 'british-pound-sterling', 'aGBPC': 'british-pound-sterling',
+    'JPYC': 'japanese-yen', 'aJPYC': 'japanese-yen',
+    'astUSDC': 'usd-coin'
+  };
+  return map[sym] || 'usd-coin';
 };
 
-const DEFAULT_CFG = PAIR_CFG['aUSDC/aTRYC'];
+const getCGVs = (sym: string) => {
+  const map: Record<string, string> = {
+    'USDC': 'usd', 'aUSDC': 'usd',
+    'EURC': 'eur', 'aEURC': 'eur',
+    'TRYC': 'try', 'aTRYC': 'try',
+    'GBPC': 'gbp', 'aGBPC': 'gbp',
+    'JPYC': 'jpy', 'aJPYC': 'jpy'
+  };
+  return map[sym] || 'usd';
+};
+
+// Global cache to prevent redundant fetches and rate limits
+const CHART_HISTORY_CACHE: Record<string, { ts: number, data: any }> = {};
 
 export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: any }) => {
+  const symIn  = tokenIn?.symbol  || 'aUSDC';
+  const symOut = tokenOut?.symbol || 'aTRYC';
+
+  const cfg = useMemo(() => ({
+    id: getCGId(symIn),
+    vs: getCGVs(symOut),
+    label: `${symIn.replace(/^a/, '')} / ${symOut.replace(/^a/, '')}`
+  }), [symIn, symOut]);
+
+  const priceContext = usePrices();
+  const prices = priceContext?.prices || {};
+  const volume24h = priceContext?.volume24h || 0;
+  const liveLiq = priceContext?.liquidity || 0;
+
   const [history, setHistory] = useState<{ price: number; ts: number }[]>([]);
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const pricesAvailable = Object.keys(prices).length > 0;
+  const [refreshKey, setRefreshKey] = useState(0);
+
+    useEffect(() => {
+      let mounted = true;
+      
+      const fetchHistory = async () => {
+        const cacheKey = `${symIn}/${symOut}`;
+        const cached = CHART_HISTORY_CACHE[cacheKey];
+        if (cached && (Date.now() - cached.ts < 15 * 60 * 1000)) {
+          if (mounted) { setHistory(cached.data); setLoading(false); }
+          return;
+        }
+
+        if (!pricesAvailable) return;
+        
+        try {
+          const sIn = symIn.replace(/^a/, '').replace('C', ''); // aEURC -> EUR
+          const sOut = symOut.replace(/^a/, '').replace('C', ''); 
+          const fixIn = sIn === 'USD' ? 'USDC' : sIn;
+          const fixOut = sOut === 'USD' ? 'USDC' : sOut;
+
+          const res = await fetch(`https://min-api.cryptocompare.com/data/v2/histohour?fsym=${fixIn}&tsym=${fixOut}&limit=48`);
+          const json = await res.json();
+          
+          if (!mounted) return;
+
+          if (json?.Data?.Data) {
+            const pts = (json.Data.Data as any[]).map(d => ({
+              ts: d.time * 1000,
+              price: d.close
+            }));
+            
+            setHistory(pts);
+            CHART_HISTORY_CACHE[cacheKey] = { ts: Date.now(), data: pts };
+            if (pts.length && !livePrice) setLivePrice(pts[pts.length - 1].price);
+          } else {
+            const pythPrice = (prices[symIn]?.price || 1) / (prices[symOut]?.price || 1);
+            const pts = Array.from({ length: 48 }, (_, i) => ({
+              ts: Date.now() - (48 - i) * 3600000,
+              price: pythPrice
+            }));
+            setHistory(pts);
+          }
+          setLoading(false);
+        } catch (err) {
+          if (mounted) setLoading(false);
+        }
+      };
+
+      fetchHistory();
+      timerRef.current = setInterval(fetchHistory, 300000); 
+      return () => { mounted = false; if (timerRef.current) clearInterval(timerRef.current); };
+    }, [symIn, symOut, refreshKey, pricesAvailable]);
+
   const [now, setNow] = useState(new Date().toLocaleTimeString('en-GB', { hour12: false }));
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -39,55 +119,16 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
     return () => clearInterval(t);
   }, []);
 
-  const symIn  = tokenIn?.symbol  || 'aUSDC';
-  const symOut = tokenOut?.symbol || 'aTRYC';
-  const cfg = useMemo(() => PAIR_CFG[`${symIn}/${symOut}`] || DEFAULT_CFG, [symIn, symOut]);
-
-  const [refreshKey, setRefreshKey] = useState(0);
-
+  // Sync live price from global context (Pyth) - ESSENTIAL FOR ACCURACY
   useEffect(() => {
-    let mounted = true;
-    setHistory([]);
-    setLivePrice(null);
-    setLoading(true);
-
-    const fetchHistory = async () => {
-      try {
-        const res = await fetch(`${CG}/coins/${cfg.id}/market_chart?vs_currency=${cfg.vs}&days=2`);
-        const json = await res.json();
-        if (!mounted || !json?.prices) return;
-        
-        let pts = (json.prices as [number, number][]).map(([ts, price]) => ({ 
-          ts, 
-          price: cfg.invert ? (1 / price) : price 
-        }));
-        
-        setHistory(pts);
-        if (pts.length) setLivePrice(pts[pts.length - 1].price);
-        setLoading(false);
-      } catch (_) { setLoading(false); }
-    };
-
-    const fetchLive = async () => {
-      try {
-        const res = await fetch(`${CG}/simple/price?ids=${cfg.id}&vs_currencies=${cfg.vs}`);
-        const json = await res.json();
-        let price = json?.[cfg.id]?.[cfg.vs];
-        if (!mounted || !price) return;
-        
-        const finalPrice = cfg.invert ? (1 / price) : price;
-        setLivePrice(finalPrice);
-        setHistory(prev => [...prev, { price: finalPrice, ts: Date.now() }].slice(-500));
-      } catch (_) {}
-    };
-
-    fetchHistory();
-    timerRef.current = setInterval(fetchLive, 30000);
-    return () => { mounted = false; if (timerRef.current) clearInterval(timerRef.current); };
-  }, [cfg, refreshKey]);
-
+    const pIn = prices[symIn]?.price;
+    const pOut = prices[symOut]?.price;
+    if (pIn && pOut) {
+      setLivePrice(pIn / pOut);
+    }
+  }, [prices, symIn, symOut]);
   // Use 24h change for overall chart color
-  const changeVal = history.length > 1 ? ((history[history.length - 1].price - history[0].price) / history[0].price) * 100 : 0;
+  const changeVal = history.length > 1 ? ((livePrice || history[history.length - 1].price) - history[0].price) / history[0].price * 100 : 0;
   const isUp = changeVal >= 0;
   const lineColor = isUp ? '#34d399' : '#f87171';
   const glowColor = isUp ? 'rgba(52,211,153,0.35)' : 'rgba(248,113,113,0.35)';
@@ -123,7 +164,7 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
   const fmt = (p: number | null) => {
     if (p === null) return '···';
     if (p < 0.01) return p.toFixed(8);
-    return p.toFixed(5);
+    return p.toFixed(6);
   };
 
   const timeLabels = useMemo(() => {
@@ -143,7 +184,6 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
     return labels;
   }, [gridStartTs, gridEndTs]);
 
-  const { volume24h, liquidity: liveLiq } = usePrices();
 
   return (
     <div className="flex flex-col gap-6 font-sans tracking-tight">

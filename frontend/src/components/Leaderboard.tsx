@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { Trophy, Medal, Star, ChevronRight, User, Search, Target, Zap, ShieldCheck } from 'lucide-react';
-import { useAccount } from 'wagmi';
+import { useAccount, useReadContract } from 'wagmi';
+import { CONTRACT_ADDRESSES } from '../config/contracts';
+import POINTS_ABI from '../abis/ArcPoints.json';
 
 interface LeaderboardEntry {
   address: string;
@@ -27,43 +29,31 @@ const TIER_ICONS = {
 export const Leaderboard = () => {
   const { address } = useAccount();
 
-  // --- GLOBAL LEADERBOARD SYNC ---
-  // Since we don't have a backend, we use a shared localStorage key to track
-  // all wallets that have ever connected on this browser/machine.
-  const globalRegistry = useMemo(() => {
-    try {
-      const stored = localStorage.getItem('arc_leaderboard_global_v2');
-      const registry = stored ? JSON.parse(stored) : {};
-      
-      // Update current user in registry
-      if (address) {
-        const userPointsKey = `arc_points_v1_${address}`;
-        const userPointsData = JSON.parse(localStorage.getItem(userPointsKey) || '{"total": 0}');
-        registry[address.toLowerCase()] = {
-          address,
-          points: userPointsData.total || 0,
-          lastSeen: Date.now()
-        };
-        localStorage.setItem('arc_leaderboard_global_v2', JSON.stringify(registry));
-      }
-      return registry;
-    } catch { return {}; }
-  }, [address]);
+  // Fetch leaderboard data from contract
+  const { data: rawLeaderboard } = useReadContract({
+    address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
+    abi: POINTS_ABI.abi as any,
+    functionName: 'getLeaderboard',
+    query: { refetchInterval: 10000 }
+  });
 
-  // Generate leaderboard from registry
   const leaderboardData = useMemo(() => {
-    const entries = Object.values(globalRegistry) as any[];
+    if (!rawLeaderboard) return [];
     
+    const [addresses, points] = rawLeaderboard as [string[], bigint[]];
+    const entries = addresses.map((addr, i) => ({
+      address: addr,
+      points: Number(points[i])
+    }));
+
     return entries
       .sort((a, b) => b.points - a.points)
       .map((user, index) => {
         const rank = index + 1;
-        
-        // WIDER TIER RANGES (Point-based for better early experience)
         let tier: any = 'Bronze';
-        if (user.points >= 10000) tier = 'Diamond';
-        else if (user.points >= 5000) tier = 'Gold';
-        else if (user.points >= 1000) tier = 'Silver';
+        if (user.points >= 5000) tier = 'Diamond';
+        else if (user.points >= 1000) tier = 'Gold';
+        else if (user.points >= 250) tier = 'Silver';
         
         return {
           ...user,
@@ -72,7 +62,7 @@ export const Leaderboard = () => {
           isUser: address && user.address.toLowerCase() === address.toLowerCase()
         };
       });
-  }, [address, globalRegistry]);
+  }, [address, rawLeaderboard]);
 
   const userRank = leaderboardData.find(u => u.isUser);
 
@@ -90,9 +80,11 @@ export const Leaderboard = () => {
            </div>
            <div className="flex flex-col">
               <span className="text-3xl font-black text-white tracking-tighter tabular-nums">
-                #{userRank?.rank || 'N/A'}
+                {userRank ? `#${userRank.rank}` : 'N/A'}
               </span>
-              <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest mt-0.5">Top {Math.round((userRank?.rank || 100) / (leaderboardData.length / 100))}% of users</span>
+              <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest mt-0.5">
+                {leaderboardData.length > 0 ? `Top ${Math.round(((userRank?.rank || 100) / (leaderboardData.length)) * 100)}% of users` : 'No data yet'}
+              </span>
            </div>
         </div>
 
@@ -102,14 +94,14 @@ export const Leaderboard = () => {
               <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
                  <Target className="text-purple-400" size={16} />
               </div>
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Next Tier</span>
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Current Tier</span>
            </div>
            <div className="flex flex-col">
               <span className="text-3xl font-black text-white tracking-tighter tabular-nums uppercase">
-                {userRank?.tier === 'Diamond' ? 'MAX' : userRank?.tier === 'Gold' ? 'Diamond' : userRank?.tier === 'Silver' ? 'Gold' : 'Silver'}
+                {userRank?.tier || 'Bronze'}
               </span>
               <span className="text-[9px] font-bold text-purple-400 uppercase tracking-widest mt-0.5">
-                {userRank?.tier === 'Diamond' ? 'You are at the top!' : `Need ~${Math.max(500, (leaderboardData[userRank?.rank ? userRank.rank - 2 : 0]?.points || 0) - (userRank?.points || 0))} more points`}
+                {userRank?.tier === 'Diamond' ? 'Max Rank Achieved' : `Keep active to reach next tier`}
               </span>
            </div>
         </div>
@@ -159,7 +151,7 @@ export const Leaderboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.02]">
-              {leaderboardData.map((user) => {
+              {leaderboardData.length > 0 ? leaderboardData.map((user) => {
                 const TierIcon = (TIER_ICONS as any)[user.tier];
                 return (
                   <tr key={user.address} className={`group transition-all duration-300 ${user.isUser ? 'bg-blue-500/[0.04]' : 'hover:bg-white/[0.02]'}`}>
@@ -213,7 +205,11 @@ export const Leaderboard = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }) : (
+                <tr>
+                  <td colSpan={4} className="px-8 py-20 text-center text-white/10 text-xs font-black uppercase tracking-widest">No rankings found on-chain yet</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
