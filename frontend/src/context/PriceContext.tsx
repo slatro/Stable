@@ -27,12 +27,10 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     aUSDC: { price: 1.0000, change24h: '+0.00%' },
     EURC: { price: 1.1730, change24h: '+0.42%' },
     aEURC: { price: 1.1730, change24h: '+0.42%' },
-    TRYC: { price: 0.02222, change24h: '+0.15%' },
-    aTRYC: { price: 0.02222, change24h: '+0.15%' },
-    GBPC: { price: 1.3520, change24h: '+0.12%' },
-    aGBPC: { price: 1.3520, change24h: '+0.12%' },
-    JPYC: { price: 0.00637, change24h: '+0.08%' },
-    aJPYC: { price: 0.00637, change24h: '+0.08%' },
+    JPYC: { price: 0.00651, change24h: '+0.08%' },
+    aJPYC: { price: 0.00651, change24h: '+0.08%' },
+    TRYC: { price: 0.03100, change24h: '+0.15%' },
+    aTRYC: { price: 0.03100, change24h: '+0.15%' },
   });
   const [loading, setLoading] = useState(true);
 
@@ -67,40 +65,20 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const formatPrice = (val: number, decimals: number = 4) => parseFloat(val.toFixed(decimals));
 
       try {
-        const FEEDS: Record<string, string> = {
-          'euro-coin': '0xa995d00bb36a63cef7fd2c287dc105fc8f3d93779f062f09551b0af3e81ec30b',
-          'british-pound': '0x84c2dde9633d93d1bcad84e7dc41c9d56578b7ec52fabedc1f335d673df0a7c1',
-          'usd-try': '0x3c667d1f953039d9361a998c25391307b01d324c5598cc020d536c4b2b698566',
-          'usd-jpy': '0xef2c98c804ba503c6a707e38be4dfbb16683775f195b091252bf24693042fd52'
-        };
-
-        const ids = Object.values(FEEDS).join('&ids[]=');
-        const res = await fetch(`https://hermes.pyth.network/v2/updates/price/latest?ids[]=${ids}`);
-        if (res.ok) {
-          const json = await res.json();
-          const data = json.parsed;
-          
-          const getPythPrice = (id: string) => {
-            const feed = data.find((f: any) => f.id === id.replace('0x', ''));
-            if (!feed) return 1;
-            return parseFloat(feed.price.price) * Math.pow(10, feed.price.expo);
-          };
-
-          const getPythChange = (id: string) => {
-            // Simulation of change as Pyth doesn't provide it in simple price
-            return (Math.random() * 0.4 - 0.2).toFixed(2) + '%';
-          };
-
+        const fsyms = 'USDC,EUR,GBP,TRY,JPY';
+        const res = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=USD&tsyms=${fsyms}`);
+        const data = await res.json();
+        
+        if (data) {
+          const getChange = () => (Math.random() * 0.4 - 0.2).toFixed(2) + '%';
           newPrices.USDC = newPrices.aUSDC = { price: 1.0000, change24h: '+0.00%' };
-          newPrices.EURC = newPrices.aEURC = { price: formatPrice(getPythPrice(FEEDS['euro-coin'])), change24h: getPythChange(FEEDS['euro-coin']) };
-          newPrices.GBPC = newPrices.aGBPC = { price: formatPrice(getPythPrice(FEEDS['british-pound'])), change24h: getPythChange(FEEDS['british-pound']) };
-          
-          // TRY and JPY are usually USD/X, so we invert
-          newPrices.TRYC = newPrices.aTRYC = { price: formatPrice(1 / getPythPrice(FEEDS['usd-try'])), change24h: getPythChange(FEEDS['usd-try']) };
-          newPrices.JPYC = newPrices.aJPYC = { price: formatPrice(1 / getPythPrice(FEEDS['usd-jpy']), 5), change24h: getPythChange(FEEDS['usd-jpy']) };
+          if (data.EUR) newPrices.EURC = newPrices.aEURC = { price: formatPrice(1/data.EUR), change24h: getChange() };
+          if (data.GBP) newPrices.GBPC = newPrices.aGBPC = { price: formatPrice(1/data.GBP), change24h: getChange() };
+          if (data.TRY) newPrices.TRYC = newPrices.aTRYC = { price: formatPrice(1/data.TRY), change24h: getChange() };
+          if (data.JPY) newPrices.JPYC = newPrices.aJPYC = { price: formatPrice(1/data.JPY, 5), change24h: getChange() };
         }
       } catch (e) {
-        console.error("Pyth fetch error:", e);
+        console.error("Price fetch error:", e);
       }
 
       if (Object.keys(newPrices).length > 0) {

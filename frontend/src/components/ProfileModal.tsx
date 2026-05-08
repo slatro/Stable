@@ -59,7 +59,7 @@ export const ProfileModal = ({ isOpen, onClose, selectedAvatar, setSelectedAvata
 
   const balances = [
     { symbol: 'USDC', name: 'Native Gas', amount: rawBalNativeUSDC, dec: (decNativeUSDC as number) || 18, icon: TOKEN_ICONS.aUSDC },
-    { symbol: 'EURC', name: 'Native Euro', amount: rawBalNativeEURC, dec: (decNativeEURC as number) || 18, icon: TOKEN_ICONS.aEURC },
+    { symbol: 'EURC', name: 'Native Euro', amount: rawBalNativeEURC, dec: 6, icon: TOKEN_ICONS.aEURC },
     { symbol: 'aUSDC', name: 'Arc Dollar', amount: balAUSDC?.value, dec: 6, icon: TOKEN_ICONS.aUSDC },
     { symbol: 'aEURC', name: 'Arc Euro', amount: balAEURC?.value, dec: 18, icon: TOKEN_ICONS.aEURC },
     { symbol: 'aTRYC', name: 'Arc Lira', amount: balATRYC?.value, dec: 18, icon: TOKEN_ICONS.aTRYC },

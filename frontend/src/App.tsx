@@ -11,10 +11,15 @@ import { TOKENS } from './config/contracts';
 import { Logo } from './components/Logo';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('swap');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('arc_active_tab') || 'swap');
   const [tokenIn, setTokenIn] = useState(TOKENS.find(t => t.symbol === 'aUSDC') || TOKENS[2]);
   const [tokenOut, setTokenOut] = useState(TOKENS.find(t => t.symbol === 'aEURC') || TOKENS[3]);
+  const [swapMode, setSwapMode] = useState('market');
   const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('arc_active_tab', activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -23,7 +28,18 @@ export default function App() {
   const renderContent = () => {
     try {
       switch (activeTab) {
-        case 'dashboard': return <Dashboard />;
+        case 'dashboard': return (
+          <Dashboard onTradeAction={(modeOrToken: any) => {
+            if (typeof modeOrToken === 'string') {
+              setSwapMode(modeOrToken);
+            } else if (modeOrToken?.symbol === 'astUSDC') {
+              setSwapMode('stake');
+            } else {
+              setSwapMode('market');
+            }
+            setActiveTab('swap');
+          }} />
+        );
         case 'swap': return (
           <div className="flex flex-col lg:flex-row gap-6 items-start animate-in slide-in-from-bottom-4 duration-700 w-full">
             <div className="hidden lg:block flex-1 h-[600px]">
@@ -34,6 +50,7 @@ export default function App() {
               setTokenIn={setTokenIn}
               tokenOut={tokenOut}
               setTokenOut={setTokenOut}
+              initialMode={swapMode}
             />
           </div>
         );
