@@ -579,6 +579,5 @@ export const PoolsPanel = () => {
         </div>
       </div>
     </div>
-    </div>
   );
 };
