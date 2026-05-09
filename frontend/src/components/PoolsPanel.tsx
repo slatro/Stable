@@ -9,6 +9,7 @@ import ROUTER_ABI from '../abis/ArcFXRouter.json';
 import ERC20_ABI from '../abis/ERC20.json';
 import { usePrices } from '../context/PriceContext';
 import { useNotifications } from '../context/NotificationContext';
+import { triggerIsland } from './TransactionIsland';
 
 const FormatSymbol = ({ symbol, className = "" }: { symbol: string | undefined, className?: string }) => {
   if (!symbol) return null;
@@ -392,8 +393,15 @@ export const PoolsPanel = () => {
           setLastApprovalHash(null);
           stateA.refetchAllowance?.();
           stateB.refetchAllowance?.();
+          triggerIsland('success', 'Approval Confirmed', hash, { type: 'Approval', asset: view === 'add' ? tokenA?.symbol : 'LP Token', amount: 'Unlimited' });
         } else {
-          notify({ type: 'success', title: 'Success', message: 'Liquidity transaction successful!', txHash: hash });
+          const fmt = (v: string) => isNaN(parseFloat(v)) ? v : parseFloat(v).toLocaleString(undefined, { maximumFractionDigits: 4 });
+          notify({ type: 'success', title: 'Success', message: `Liquidity ${view === 'add' ? 'Addition' : 'Removal'} successful!`, txHash: hash });
+          triggerIsland('success', `${view === 'add' ? 'Add' : 'Remove'} Liquidity Successful`, hash, { 
+            type: view === 'add' ? 'Add Liquidity' : 'Remove Liquidity', 
+            asset: `${tokenA?.symbol}/${tokenB?.symbol}`, 
+            amount: view === 'add' ? `${fmt(amountA)} / ${fmt(amountB)}` : `${removePercent}%`
+          });
           setRecentTxHash(hash);
           setAmountA(''); setAmountB('');
           setTimeout(manualRefetch, 500);

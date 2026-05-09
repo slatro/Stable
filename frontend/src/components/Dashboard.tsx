@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Wallet, TrendingUp, Zap, ShieldCheck, ArrowUpRight, ArrowDownRight, Search, Filter, Loader2, CheckCircle2, Layers } from 'lucide-react';
-import { CONTRACT_ADDRESSES, TOKENS } from '../config/contracts';
+import { TOKENS, CONTRACT_ADDRESSES } from '../config/contracts';
 import { useAccount, useBalance, useWriteContract, useWaitForTransactionReceipt, useReadContracts, useReadContract } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { usePrices } from '../context/PriceContext';
+import { PortfolioChart } from './PortfolioChart';
 import FAUCET_ABI from '../abis/MultiFaucet.json';
 import AMM_ABI from '../abis/ArcFXAMM.json';
 import ERC20_ABI from '../abis/ERC20.json';
@@ -12,6 +13,7 @@ import ROUTER_ABI from '../abis/ArcFXRouter.json';
 import FACTORY_ABI from '../abis/ArcFXFactory.json';
 import STAKING_ABI from '../abis/ArcFXStaking.json';
 import { useNotifications } from '../context/NotificationContext';
+import { usePoints } from '../context/PointsContext';
 
 const FormatSymbol = ({ symbol, className = "" }: { symbol: string | undefined, className?: string }) => {
   if (!symbol) return null;
@@ -55,19 +57,29 @@ const AirdropIcon = () => (
   </svg>
 );
 
-const StatCard = ({ title, value, change, icon: Icon, color, imageIcon, glowColor, isSpecial }: any) => (
+const StatCard = ({ title, value, change, icon: Icon, color, imageIcon, glowColor, isSpecial, extraInfo, pendingAmount }: any) => (
   <div className={`glass-frame px-4 py-3 flex items-center gap-4 group hover:border-white/20 transition-all duration-700 relative overflow-hidden h-[72px] ${isSpecial ? 'border-blue-400/40 bg-blue-400/[0.08]' : ''}`}>
     <div className="absolute top-0 right-0 w-16 h-16 bg-white/[0.02] rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-700" />
     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xl border border-white/5 ${color}`}>
       {title === "ARC POINTS" ? <div className="animate-bounce-slow"><AirdropIcon /></div> : <Icon size={20} />}
     </div>
-    <div className="flex flex-col flex-1 leading-tight">
-      <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mb-0.5">{title}</span>
+    <div className="flex flex-col flex-1 min-w-0 justify-center">
+      <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] truncate mb-0.5">{title}</span>
       <div className="flex items-center gap-2">
-        <span className="text-lg font-black text-white tracking-tighter">{value}</span>
-        {change && <div className={`flex items-center gap-0.5 text-[9px] font-black italic tracking-widest ${change.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`}>{change}</div>}
+        <span className="text-xl font-black text-white tracking-tighter tabular-nums">{value || '...'}</span>
+        {change && <div className={`flex items-center gap-0.5 text-[9px] font-black italic tracking-widest ${change.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap`}>{change}</div>}
       </div>
     </div>
+    {extraInfo && (
+      <div className="flex flex-col items-end ml-auto">
+        <span className="text-[9px] font-black text-blue-400/60 uppercase tracking-widest whitespace-nowrap mb-0.5">{extraInfo}</span>
+        {pendingAmount !== undefined && (
+          <span className="text-[8px] font-black text-emerald-400 uppercase tracking-[0.15em] animate-pulse">
+            +{pendingAmount} Pending
+          </span>
+        )}
+      </div>
+    )}
   </div>
 );
 
@@ -129,7 +141,7 @@ const useTotalWalletValue = (balances: any, livePrices: any, nativeBalances: any
         total += bal * livePrices['USDC'].price;
       }
       if (nativeBalances.eurc !== undefined && livePrices['EURC']) {
-        const bal = parseFloat(formatUnits(BigInt(nativeBalances.eurc.toString()), 18));
+        const bal = parseFloat(formatUnits(BigInt(nativeBalances.eurc.toString()), 6));
         total += bal * livePrices['EURC'].price;
       }
       balances.slice(2).forEach((res: any, i: number) => {
@@ -148,7 +160,7 @@ const useTotalWalletValue = (balances: any, livePrices: any, nativeBalances: any
 export const Dashboard = ({ onTradeAction }: { onTradeAction: (asset: any) => void }) => {
   return (
     <DashboardErrorBoundary>
-      <div className="flex flex-col gap-12 animate-in fade-in duration-700 w-full max-w-[1600px] mx-auto py-4">
+      <div className="flex flex-col gap-0 animate-in fade-in duration-700">
         <DashboardContent onTradeAction={onTradeAction} />
       </div>
     </DashboardErrorBoundary>
@@ -292,7 +304,32 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
     return acc + (p.usdValue * (aprNum / 100) / 365);
   }, 0).toFixed(6);
 
-  const { data: userPoints } = useReadContract({ address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`, abi: POINTS_ABI.abi as any, functionName: 'getUserPoints', args: address ? [address] : undefined, query: { enabled: !!address, refetchInterval: 10000 } });
+  const { data: userPointsRes, refetch: refetchPoints } = useReadContract({ 
+    address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`, 
+    abi: [{ name: 'users', type: 'function', stateMutability: 'view', inputs: [{ name: '', type: 'address' }], outputs: [{ name: 'totalPoints', type: 'uint256' }, { name: 'lastCheckIn', type: 'uint256' }, { name: 'currentStreak', type: 'uint256' }, { name: 'totalSwaps', type: 'uint256' }, { name: 'totalLiquidityAdded', type: 'uint256' }] }], 
+    functionName: 'users', 
+    args: address ? [address] : undefined, 
+    query: { enabled: !!address, refetchInterval: 30000 } 
+  });
+
+  const userPoints = (userPointsRes as any)?.[0];
+  const lastCheckIn = (userPointsRes as any)?.[1];
+  const userStreak = (userPointsRes as any)?.[2];
+
+  // Check if check-in is available (24h has passed)
+  const isCheckInAvailable = useMemo(() => {
+    if (!lastCheckIn) return true;
+    const now = Math.floor(Date.now() / 1000);
+    return now - Number(lastCheckIn) >= 24 * 3600;
+  }, [lastCheckIn]);
+  
+  const { data: nextSnapshot, refetch: refetchSnapshot } = useReadContract({
+    address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
+    abi: [{ name: 'getNextSnapshotTime', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint256' }] }],
+    functionName: 'getNextSnapshotTime',
+    query: { refetchInterval: 60000 }
+  });  // Re-sync points on any platform event
+  const { localSwapCount, localPointsOffset, settlePoints } = usePoints();
 
   // --- STAKING HOOKS ---
   const { data: stakingData } = useReadContracts({
@@ -312,14 +349,87 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
   const astUSDC_Bal = parseFloat(formatUnits(astUSDC_BalRaw, 6));
   const stakedValueUsd = astUSDC_Bal * (parseFloat(formatUnits(exchangeRate, 6))) * (prices['USDC']?.price || 1);
 
+  // --- PENDING POINTS CALCULATION ---
+  const pendingPoints = useMemo(() => {
+    if (!address) return 0;
+    const lpContribution = Math.floor(lpValue * 10);
+    const stakeContribution = Math.floor(stakedValueUsd * 5);
+    const contractSwaps = Number((userPointsRes as any)?.[3] || 0);
+    const swapContribution = Math.max(contractSwaps, localSwapCount) * 1; // 1 point per swap as requested
+    const activityBaseline = 25; 
+    return lpContribution + stakeContribution + swapContribution + activityBaseline;
+  }, [lpValue, stakedValueUsd, userPointsRes, localSwapCount, address]);
+
+  const [snapshotCountdown, setSnapshotCountdown] = React.useState('');
+  const { notify } = useNotifications();
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      if (!nextSnapshot) return;
+      const now = Math.floor(Date.now() / 1000);
+      const diff = Number(nextSnapshot) - now;
+      if (diff <= 0) {
+        if (pendingPoints > 0) {
+          settlePoints(pendingPoints);
+          notify('success', `Snapshot Settled: +${pendingPoints} Points Added!`, 'Snapshot complete.');
+        }
+        setSnapshotCountdown('SETTLING...');
+        refetchSnapshot();
+        return;
+      }
+      const h = Math.floor(diff / 3600);
+      const m = Math.floor((diff % 3600) / 60);
+      const s = diff % 60;
+      setSnapshotCountdown(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [nextSnapshot, refetchSnapshot, pendingPoints, notify, settlePoints]);
+
+
+  // Prepare assets for the chart
+  const portfolioAssets = useMemo(() => {
+    const arr: any[] = [];
+    const colors = ['#3B82F6', '#10B881', '#A855F7', '#F59E0B', '#EF4444', '#06B6D4'];
+
+    if (usdcNativeBal) {
+      const val = parseFloat(formatUnits(usdcNativeBal.value, 18));
+      if (val > 0) arr.push({ symbol: 'USDC', amount: val.toLocaleString(undefined, { maximumFractionDigits: 2 }), value: val * (prices['USDC']?.price || 1), color: colors[0] });
+    }
+    if (eurcNativeBal !== undefined) {
+      const val = parseFloat(formatUnits(BigInt(eurcNativeBal.toString()), 6));
+      if (val > 0) arr.push({ symbol: 'EURC', amount: val.toLocaleString(undefined, { maximumFractionDigits: 2 }), value: val * (prices['EURC']?.price || 1), color: colors[1] });
+    }
+    if (balances) {
+      balances.forEach((res: any, i: number) => {
+        if (res.status === 'success' && res.result > 0n) {
+          const t = TOKENS[i];
+          // Skip USDC/EURC as they are handled natively above
+          if (t.symbol === 'USDC' || t.symbol === 'EURC') return;
+          const val = parseFloat(formatUnits(res.result, t.decimals || 18));
+          arr.push({ symbol: t.symbol, amount: val.toLocaleString(undefined, { maximumFractionDigits: 2 }), value: val * (prices[t.symbol]?.price || 0), color: colors[(i + 2) % colors.length] });
+        }
+      });
+    }
+    return arr;
+  }, [usdcNativeBal, eurcNativeBal, balances, prices]);
+
   return (
     <div className="w-full space-y-8 px-2">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="ARC POINTS" value={userPoints !== undefined ? userPoints.toString() : '...'} isSpecial={true} color="bg-blue-500/10 text-blue-400" />
+        <StatCard 
+          title="ARC POINTS" 
+          value={userPoints !== undefined ? (Number(userPoints) + localPointsOffset).toString() : '...'} 
+          isSpecial={true} 
+          color="bg-blue-500/10 text-blue-400" 
+          extraInfo={isCheckInAvailable ? "READY TO CLAIM" : (snapshotCountdown ? `Next: ${snapshotCountdown}` : undefined)}
+          pendingAmount={pendingPoints}
+        />
         <StatCard title="PORTFOLIO VALUE" value={`$${totalPortfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} change="+1.2%" icon={TrendingUp} color="bg-emerald-500/10 text-emerald-400" />
         <StatCard title="YIELD EARNED" value={`$${estimatedYield}`} icon={Zap} color="bg-amber-500/10 text-amber-400" />
         <StatCard title="ACTIVE POSITIONS" value={poolDetails.length.toString()} icon={Wallet} color="bg-purple-500/10 text-purple-400" />
       </div>
+
+      <PortfolioChart totalValue={totalPortfolioValue} assets={portfolioAssets} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div className="space-y-4">
@@ -359,7 +469,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
                   <img src={astUSDC_Token?.logo} className="w-full h-full rounded-full" alt="" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-black text-white uppercase italic leading-none tracking-tight">
+                  <span className="text-xs font-black text-white uppercase leading-none tracking-tight">
                     <span className="text-blue-400 lowercase text-[10px]">a</span>stUSDC
                   </span>
                   <span className="text-[8px] font-bold text-emerald-400/60 uppercase tracking-widest mt-1">Yield Bearing</span>
@@ -370,7 +480,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
                 <div className="flex flex-col">
                   <span className="text-xs font-black text-white tabular-nums leading-none">
                     {astUSDC_Bal.toLocaleString(undefined, { maximumFractionDigits: 2 })}{' '}
-                    <span className="text-xs text-white/30 uppercase tracking-tight italic">
+                    <span className="text-xs text-white/30 uppercase tracking-tight">
                       <span className="text-blue-400 lowercase">a</span>stUSDC
                     </span>
                   </span>

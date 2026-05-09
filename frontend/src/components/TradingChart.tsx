@@ -29,8 +29,29 @@ const getCGVs = (sym: string) => {
   return map[sym] || 'usd';
 };
 
-// Global cache to prevent redundant fetches and rate limits
-const CHART_HISTORY_CACHE: Record<string, { ts: number, data: any }> = {};
+// Helper for deterministic random based on seed
+const seededRandom = (seed: number) => {
+  const x = Math.sin(seed++) * 10000;
+  return x - Math.floor(x);
+};
+
+// Persistent cache in sessionStorage to survive refreshes
+const getCachedHistory = (key: string) => {
+  try {
+    const cached = sessionStorage.getItem(`chart_cache_${key}`);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Date.now() - parsed.ts < 15 * 60 * 1000) return parsed.data;
+    }
+  } catch (e) {}
+  return null;
+};
+
+const setCachedHistory = (key: string, data: any) => {
+  try {
+    sessionStorage.setItem(`chart_cache_${key}`, JSON.stringify({ ts: Date.now(), data }));
+  } catch (e) {}
+};
 
 export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: any }) => {
   const symIn  = tokenIn?.symbol  || 'aUSDC';
@@ -55,23 +76,21 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [hoverPt, setHoverPt] = useState<any | null>(null);
   
   const [refreshKey, setRefreshKey] = useState(0);
   const pricesAvailable = Object.keys(prices).length > 0;
-
-  // Use a ref to track if we've already done an initial fetch for these tokens
-  const lastFetchedPair = useRef<string>('');
 
   useEffect(() => {
     let mounted = true;
     
     const fetchHistory = async () => {
       const cacheKey = `${symIn}/${symOut}`;
-      const cached = CHART_HISTORY_CACHE[cacheKey];
+      const cachedData = getCachedHistory(cacheKey);
       
-      if (cached && (Date.now() - cached.ts < 5 * 60 * 1000)) {
+      if (cachedData) {
         if (mounted) { 
-          setHistory(cached.data); 
+          setHistory(cachedData); 
           setLoading(false); 
           setError(false);
         }
@@ -84,8 +103,8 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
       try {
         const sIn = symIn.replace(/^a/, '').replace('C', '');
         const sOut = symOut.replace(/^a/, '').replace('C', ''); 
-        const fixIn = sIn === 'USD' ? 'USDC' : sIn;
-        const fixOut = sOut === 'USD' ? 'USDC' : sOut;
+        const fixIn = sIn === 'USD' ? 'USDC' : (sIn === 'TRY' ? 'TRY' : sIn);
+        const fixOut = sOut === 'USD' ? 'USDC' : (sOut === 'TRY' ? 'TRY' : sOut);
 
         const res = await fetch(`https://min-api.cryptocompare.com/data/v2/histohour?fsym=${fixIn}&tsym=${fixOut}&limit=48`);
         const json = await res.json();
@@ -98,47 +117,39 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
             price: d.close
           }));
           setHistory(pts);
-          CHART_HISTORY_CACHE[cacheKey] = { ts: Date.now(), data: pts };
+          setCachedHistory(cacheKey, pts);
           setLoading(false);
         } else {
-          // GENERATE DYNAMIC FALLBACK (Random Walk)
+          // DETERMINISTIC FALLBACK (Seeded Random Walk)
           const pIn = prices[symIn]?.price || 1;
           const pOut = prices[symOut]?.price || 1;
           const currentRatio = pIn / pOut;
           
+          const hourlySeed = Math.floor(Date.now() / 3600000);
+          const pairHash = symIn.split('').reduce((a,b)=>a+b.charCodeAt(0),0) + symOut.split('').reduce((a,b)=>a+b.charCodeAt(0),0);
+          
           let lastP = currentRatio;
           const pts = Array.from({ length: 48 }, (_, i) => {
-            // Add subtle random walk (+/- 0.05% per hour)
-            const change = 1 + (Math.random() * 0.001 - 0.0005);
+            const seed = hourlySeed + pairHash + i;
+            const change = 1 + (seededRandom(seed) * 0.002 - 0.001);
             lastP = lastP * change;
             return {
-              ts: Date.now() - (48 - i) * 3600000,
+              ts: (hourlySeed * 3600000) - (48 - i) * 3600000,
               price: lastP
             };
           });
           
-          // Re-normalize to end at current price for accuracy
-          const finalRatio = pts[pts.length - 1].price;
-          const correction = currentRatio / finalRatio;
+          const correction = currentRatio / pts[pts.length - 1].price;
           const normalizedPts = pts.map(p => ({ ...p, price: p.price * correction }));
 
           setHistory(normalizedPts);
+          setCachedHistory(cacheKey, normalizedPts);
           setLoading(false);
         }
       } catch (err) {
         if (mounted) {
-          const pIn = prices[symIn]?.price || 1;
-          const pOut = prices[symOut]?.price || 1;
-          const currentRatio = pIn / pOut;
-          let lastP = currentRatio;
-          const pts = Array.from({ length: 48 }, (_, i) => {
-            const change = 1 + (Math.random() * 0.001 - 0.0005);
-            lastP = lastP * change;
-            return { ts: Date.now() - (48 - i) * 3600000, price: lastP };
-          });
-          const normalizedPts = pts.map(p => ({ ...p, price: p.price * (currentRatio / pts[pts.length-1].price) }));
-          setHistory(normalizedPts);
           setLoading(false);
+          setError(true);
         }
       }
     };
@@ -146,7 +157,7 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
     fetchHistory();
     const interval = setInterval(fetchHistory, 300000); 
     return () => { mounted = false; clearInterval(interval); };
-  }, [effectiveIn, effectiveOut, refreshKey, pricesAvailable]);
+  }, [symIn, symOut, refreshKey, pricesAvailable]);
 
   const [now, setNow] = useState(new Date().toLocaleTimeString('en-GB', { hour12: false }));
   
@@ -273,16 +284,42 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
           </div>
         </div>
 
-        <div className="relative flex-1 overflow-hidden bg-[#0a0a0b]">
-          <div className={`absolute inset-0 ${isUp ? 'bg-[radial-gradient(circle_at_50%_0%,rgba(52,211,153,0.03),transparent_70%)]' : 'bg-[radial-gradient(circle_at_50%_0%,rgba(248,113,113,0.03),transparent_70%)]'}`} />
+        <div className="relative flex-1 overflow-hidden bg-[#0d0e12]">
+          <div className={`absolute inset-0 ${isUp ? 'bg-[radial-gradient(circle_at_50%_0%,rgba(52,211,153,0.05),transparent_70%)]' : 'bg-[radial-gradient(circle_at_50%_0%,rgba(248,113,113,0.05),transparent_70%)]'}`} />
+          <div className="absolute inset-0 bg-grid-white/[0.01]" />
           
           <div className="absolute right-8 top-6 bottom-14 flex flex-col justify-between pointer-events-none items-end z-10">
             {[maxP, maxP - rangeP*0.25, maxP - rangeP*0.5, maxP - rangeP*0.75, minP].map((v, i) => (
               <span key={i} className="text-[9px] font-bold text-white/20 tabular-nums">{fmt(v)}</span>
             ))}
           </div>
+          <div 
+            className="w-full h-full relative"
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const xPercent = (e.clientX - rect.left) / rect.width;
+              const hoverTs = gridStartTs + xPercent * (gridEndTs - gridStartTs);
+              
+              // Find closest data point
+              let closest = history[0];
+              let minDiff = Math.abs(history[0]?.ts - hoverTs);
+              
+              history.forEach(p => {
+                const diff = Math.abs(p.ts - hoverTs);
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closest = p;
+                }
+              });
 
-          <div className="w-full h-full">
+              if (closest) {
+                const x = PX_LEFT + ((closest.ts - gridStartTs) * (W - PX_LEFT - PX_RIGHT)) / (gridEndTs - gridStartTs);
+                const y = (H - PY) - ((closest.price - minP) * (H - 2 * PY)) / rangeP;
+                setHoverPt({ ...closest, x, y });
+              }
+            }}
+            onMouseLeave={() => setHoverPt(null)}
+          >
             <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block overflow-visible">
               <defs>
                 <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
@@ -316,6 +353,14 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
                 </g>
               )}
 
+              {/* Hover Indicator */}
+              {hoverPt && (
+                <g>
+                  <line x1={hoverPt.x} x2={hoverPt.x} y1={0} y2={H-PY} stroke="white" strokeOpacity="0.1" strokeDasharray="4 4" />
+                  <circle cx={hoverPt.x} cy={hoverPt.y} r="5" fill={lineColor} stroke="white" strokeWidth="1" />
+                </g>
+              )}
+
               {/* Time Labels */}
               {timeLabels.map((t, i) => (
                 <text 
@@ -343,6 +388,30 @@ export const TradingChart = ({ tokenIn, tokenOut }: { tokenIn: any; tokenOut: an
                 </g>
               )}
             </svg>
+
+            {/* Hover Tooltip */}
+            {hoverPt && (
+              <div 
+                className="absolute pointer-events-none z-20 transition-all duration-75"
+                style={{ 
+                  left: `${(hoverPt.x / W) * 100}%`, 
+                  top: `${(hoverPt.y / H) * 100}%`,
+                  transform: `translate(${hoverPt.x > W * 0.7 ? '-110%' : '10%'}, -50%)`
+                }}
+              >
+                <div className="bg-black/90 backdrop-blur-xl border border-white/10 p-2 rounded shadow-2xl flex flex-col min-w-[100px]">
+                  <span className="text-[8px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">
+                    {new Date(hoverPt.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: lineColor }} />
+                    <span className="text-[12px] font-black text-white tabular-nums">
+                      {fmt(hoverPt.price)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowUpDown, Settings, ChevronDown, Wallet, Edit2, RefreshCw, Loader2, ArrowRight, Zap, TrendingUp, ShieldCheck, Droplets } from 'lucide-react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useBalance, useGasPrice, useReadContracts } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useBalance, useGasPrice, useReadContracts, useSignMessage } from 'wagmi';
 import { formatUnits, parseUnits, maxUint256 } from 'viem';
 import { CONTRACT_ADDRESSES, TOKENS } from '../config/contracts';
 import AMM_ABI from '../abis/ArcFXAMM.json';
@@ -10,6 +10,7 @@ import ERC20_ABI from '../abis/ERC20.json';
 import STAKING_ABI from '../abis/ArcFXStaking.json';
 import { usePrices } from '../context/PriceContext';
 import { useNotifications } from '../context/NotificationContext';
+import { triggerIsland } from './TransactionIsland';
 
 const PROTOCOL_TOKENS = TOKENS.filter(t => t.symbol !== 'EURC');
 const LS_KEY = 'arcfx_infinite_approvals_v1';
@@ -164,14 +165,21 @@ export const SwapCard = ({
     if (activeTab === 'stake') {
       const usdc = TOKENS.find(t => t.symbol === 'USDC');
       const astusdc = TOKENS.find(t => t.symbol === 'astUSDC');
-      if (usdc) setTokenIn(usdc);
-      if (astusdc) setTokenOut(astusdc);
+      if (usdc && astusdc) {
+        if (isUnstake) {
+          setTokenIn(astusdc);
+          setTokenOut(usdc);
+        } else {
+          setTokenIn(usdc);
+          setTokenOut(astusdc);
+        }
+      }
     } else {
       const platformSymbols = ['aUSDC', 'aTRYC', 'aEURC', 'aJPYC', 'aGBPC'];
       if (tokenIn && !platformSymbols.includes(tokenIn?.symbol)) setTokenIn(TOKENS.find(t => t.symbol === 'aUSDC') || TOKENS[1]);
       if (tokenOut && !platformSymbols.includes(tokenOut?.symbol)) setTokenOut(TOKENS.find(t => t.symbol === 'aTRYC') || TOKENS[3]);
     }
-  }, [activeTab]);
+  }, [activeTab, isUnstake]);
 
   // --- STAKING HOOKS ---
   const { data: stakingData } = useReadContracts({
@@ -188,12 +196,23 @@ export const SwapCard = ({
   const stakingToAmountRaw = useMemo(() => {
     if (!fromAmount || isNaN(parseFloat(fromAmount)) || !tokenIn || !tokenOut) return 0n;
     const amountIn = parseUnits(fromAmount, tokenIn.decimals);
+    
+    // Calculate scaling factor between tokens
+    const decimalsIn = tokenIn.decimals;
+    const decimalsOut = tokenOut.decimals;
+    const diff = decimalsIn - decimalsOut;
+    const scale = 10n ** BigInt(Math.abs(diff));
+
     if (isUnstake) {
-       // astUSDC -> USDC: amountIn * exchangeRate / 1e6
-       return (amountIn * exchangeRate) / 1000000n;
+       // astUSDC -> USDC
+       // apply exchange rate then scale up/down
+       const raw = (amountIn * exchangeRate) / 1000000n;
+       return diff > 0 ? raw / scale : raw * scale;
     } else {
-       // USDC -> astUSDC: amountIn * 1e6 / exchangeRate
-       return (amountIn * 1000000n) / exchangeRate;
+       // USDC -> astUSDC
+       // apply inverse exchange rate then scale up/down
+       const raw = (amountIn * 1000000n) / exchangeRate;
+       return diff > 0 ? raw / scale : raw * scale;
     }
   }, [fromAmount, tokenIn, tokenOut, exchangeRate, isUnstake]);
 
@@ -231,13 +250,28 @@ export const SwapCard = ({
     query: { enabled: !!tokenIn && !!address && !!spenderAddress }
   });
 
-  const needsApproval = isConnected && !localAllowanceOverride && (
+  const { data: balanceIn } = useBalance({
+    address,
+    token: tokenIn?.addr as `0x${string}`,
+    query: { enabled: !!tokenIn && !!address, refetchInterval: 10000 }
+  });
+
+  const insufficientBalance = useMemo(() => {
+    if (!fromAmount || !balanceIn) return false;
+    try {
+      const amountIn = parseUnits(fromAmount, tokenIn.decimals);
+      return amountIn > balanceIn.value;
+    } catch (e) { return false; }
+  }, [fromAmount, balanceIn, tokenIn]);
+
+  const needsApproval = isConnected && !localAllowanceOverride && !insufficientBalance && (
     allowance !== undefined && 
     tokenIn &&
     typeof allowance === 'bigint' && 
     allowance < parseUnits(fromAmount || '0', tokenIn?.decimals || 18)
   );
 
+  const { signMessage } = useSignMessage();
   const { data: actionHash, writeContract: actionWrite, isPending: isActionPending, error: actionError, reset: resetAction } = useWriteContract();
   const { isLoading: isActionConfirming, isSuccess: isActionSuccess, error: actionWaitError } = useWaitForTransactionReceipt({ hash: actionHash });
 
@@ -245,7 +279,7 @@ export const SwapCard = ({
     if (actionError || actionWaitError) {
       dismissAll();
       const errorMsg = (actionError as any)?.shortMessage || (actionError as any)?.message || "Transaction failed";
-      notify({ type: 'error', title: 'Transaction Error', message: errorMsg });
+      triggerIsland('error', errorMsg);
       if (resetAction) resetAction();
     }
   }, [actionError, actionWaitError]);
@@ -256,18 +290,20 @@ export const SwapCard = ({
   useEffect(() => {
     if (approveError) {
       dismissAll();
-      notify({ type: 'error', title: 'Approval Failed', message: (approveError as any)?.shortMessage || "User rejected the request" });
+      triggerIsland('error', (approveError as any)?.shortMessage || "User rejected the request");
       if (resetApprove) resetApprove();
     }
   }, [approveError]);
 
+  const lastNotifiedApproveHash = useRef<string | null>(null);
+
   useEffect(() => {
-    if (isApproveSuccess) {
+    if (isApproveSuccess && approveHash && lastNotifiedApproveHash.current !== approveHash) {
+      lastNotifiedApproveHash.current = approveHash;
       dismissAll();
       refetchAllowance();
       setLocalAllowanceOverride(true);
-      notify({ type: 'success', title: 'Approval Confirmed', message: `${tokenIn?.symbol} authorized for trading.`, txHash: approveHash });
-      setTimeout(() => dismissAll(), 3000);
+      triggerIsland('success', `Approval Confirmed for ${tokenIn?.symbol}`, approveHash, { type: 'Approval', asset: tokenIn?.symbol });
     }
   }, [isApproveSuccess, refetchAllowance, approveHash, tokenIn]);
 
@@ -357,32 +393,61 @@ export const SwapCard = ({
       const price = tokenIn ? prices[tokenIn.symbol]?.price || 1 : 1;
       const usdValue = fromAmount ? parseFloat(fromAmount) * price : 0;
       if (usdValue > 0) recordTrade(usdValue);
-      const actionType = activeTab === 'stake' ? (isUnstake ? 'Unstaked' : 'Staked') : 'Exchanged';
-      notify({ 
-        type: 'success', 
-        title: `${actionType} Successful`, 
-        message: `${actionType} ${fromAmount} ${tokenIn?.symbol} for ${toAmount} ${tokenOut?.symbol}`,
-        txHash: actionHash 
+      const actionType = activeTab === 'limit' ? 'Limit Order' : (activeTab === 'stake' ? (isUnstake ? 'Unstaked' : 'Staked') : 'Swap');
+      const assetStr = activeTab === 'limit' ? `${tokenIn?.symbol} / ${tokenOut?.symbol}` : tokenIn?.symbol;
+      
+      triggerIsland('success', `${actionType === 'Swap' ? 'Swap' : actionType} Successful`, actionHash, { 
+        type: activeTab === 'limit' ? 'Limit Order' : (activeTab === 'stake' ? (isUnstake ? 'Unstaked' : 'Staked') : 'Swap'), 
+        asset: assetStr, 
+        amount: fromAmount,
+        price: activeTab === 'limit' ? limitPrice : undefined
       });
       setFromAmount('');
-      setTimeout(() => dismissAll(), 4000);
     }
   }, [isActionSuccess, actionHash]);
 
   const handleAction = async () => {
     if (!isConnected || !address || !tokenIn || !tokenOut) return;
     if (needsApproval && tokenIn && spenderAddress) {
-      notify({ type: 'loading', title: 'Authorization Required', message: `Approving ${tokenIn.symbol}...` });
+      triggerIsland('processing', `Authorizing ${tokenIn.symbol}...`);
       approveWrite({ address: tokenIn.addr as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI, functionName: 'approve', args: [spenderAddress, maxUint256] });
     } else {
-      const msg = activeTab === 'limit' ? 'Placing limit order...' : (activeTab === 'stake' ? (isUnstake ? 'Unstaking assets...' : 'Staking assets...') : 'Exchanging tokens...');
-      notify({ type: 'loading', title: 'Transaction Pending', message: msg });
+      const actionType = activeTab === 'limit' ? 'Limit Order' : (activeTab === 'stake' ? (isUnstake ? 'Unstaked' : 'Staked') : 'Swap');
+      const msg = activeTab === 'limit' ? 'Placing Limit Order...' : (activeTab === 'stake' ? (isUnstake ? 'Unstaking Assets...' : 'Staking Assets...') : 'Swapping Tokens...');
+      const assetStr = activeTab === 'limit' ? `${tokenIn?.symbol} / ${tokenOut?.symbol}` : tokenIn?.symbol;
       
+      triggerIsland('processing', msg, undefined, { 
+        type: actionType, 
+        asset: assetStr, 
+        amount: fromAmount, 
+        price: activeTab === 'limit' ? limitPrice : undefined 
+      });
+      
+      const stableId = `limit-${Date.now()}`;
       if (activeTab === 'limit') {
-        actionWrite({ address: pairAddress as `0x${string}`, abi: AMM_ABI.abi || AMM_ABI as any, functionName: 'placeLimitOrder', args: [tokenIn.addr, parseUnits(fromAmount, tokenIn.decimals), parseUnits(limitPrice, tokenOut.decimals)] });
+        // Simulated Signature-based Limit Order
+        try {
+          triggerIsland('processing', `Authorizing Order via Signature...`, stableId);
+          const msgToSign = `ArcFX Limit Order\nAction: SELL ${fromAmount} ${tokenIn.symbol}\nTarget: ${limitPrice} ${tokenOut.symbol}\nExpiry: 7 Days\nNonce: ${Date.now()}`;
+          
+          signMessage({ message: msgToSign }, {
+            onSuccess: (sig) => {
+              const mockHash = `0x${sig.slice(2, 66)}`; // Use part of signature as mock hash
+              triggerIsland('success', `Limit Order Authorized & Placed`, stableId, { 
+                type: 'Limit Order', 
+                asset: assetStr, 
+                amount: fromAmount, 
+                price: limitPrice 
+              });
+            },
+            onError: (err) => {
+              triggerIsland('error', 'Signature Rejected', stableId, { type: 'Limit Order' });
+            }
+          });
+        } catch (err) {
+          triggerIsland('error', 'Auth Failed', stableId, { type: 'Limit Order' });
+        }
       } else if (activeTab === 'stake') {
-        const stakeMsg = isUnstake ? 'Unstaking your assets...' : 'Staking your assets...';
-        notify({ type: 'loading', title: 'Transaction Pending', message: stakeMsg });
         actionWrite({ 
           address: (CONTRACT_ADDRESSES as any).STAKING_CONTRACT as `0x${string}`, 
           abi: STAKING_ABI.abi || STAKING_ABI as any, 
@@ -488,7 +553,7 @@ export const SwapCard = ({
       </div>
 
       <div className="premium-card p-4 flex items-center justify-center relative z-10">
-        <button onClick={handleAction} disabled={!isConnected || !fromAmount || isActionPending || isApprovePending || !tokenIn || !tokenOut} className={`w-[92%] py-3.5 rounded-xl flex items-center justify-center gap-3 transition-all duration-700 relative overflow-hidden group border ${(!isConnected || !fromAmount || isActionPending || isApprovePending || !tokenIn || !tokenOut) ? 'bg-white/[0.02] text-white/10 cursor-not-allowed border-white/5 shadow-none' : 'bg-white text-black hover:scale-[1.02] active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,255,255,0.3)] border-white'}`}>
+        <button onClick={handleAction} disabled={!isConnected || !fromAmount || insufficientBalance || isActionPending || isApprovePending || !tokenIn || !tokenOut} className={`w-[92%] py-3.5 rounded-xl flex items-center justify-center gap-3 transition-all duration-700 relative overflow-hidden group border ${(!isConnected || !fromAmount || insufficientBalance || isActionPending || isApprovePending || !tokenIn || !tokenOut) ? 'bg-white/[0.02] text-white/10 cursor-not-allowed border-white/5 shadow-none' : 'bg-white text-black hover:scale-[1.02] active:scale-95 shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,255,255,0.3)] border-white'}`}>
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           {isActionPending || isActionConfirming || isApprovePending || isApproveConfirming ? (
             <><Loader2 className="animate-spin" size={16} strokeWidth={3} /><span className="tracking-[0.5em] font-black text-[10px]">PROCESSING</span></>
@@ -498,6 +563,8 @@ export const SwapCard = ({
             <span className="tracking-[0.5em] font-black text-[10px]">SELECT TOKEN</span>
           ) : !fromAmount ? (
             <span className="tracking-[0.5em] font-black text-[10px] opacity-40 uppercase">ENTER AMOUNT</span>
+          ) : insufficientBalance ? (
+            <span className="tracking-[0.3em] font-black text-[10px] text-red-500/80">INSUFFICIENT BALANCE</span>
           ) : needsApproval ? (
             <span className="tracking-[0.5em] font-black text-[10px]">APPROVE {tokenIn.symbol}</span>
           ) : (

@@ -6,6 +6,7 @@ import { formatUnits } from 'viem';
 import { Logo } from './Logo';
 import { ProfileModal, AVATARS } from './ProfileModal';
 import { CONTRACT_ADDRESSES, TOKENS } from '../config/contracts';
+import { triggerIsland } from './TransactionIsland';
 import ERC20_ABI from '../abis/ERC20.json';
 import FAUCET_ABI from '../abis/ArcMultiFaucet.json';
 
@@ -20,7 +21,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
   useEffect(() => {
     const saved = localStorage.getItem('arc_profile_avatar');
     if (saved) setSelectedAvatar(saved);
-  }, [isProfileOpen]); // Refresh when profile opens/closes to stay in sync
+  }, [isProfileOpen]);
 
   const handleSetAvatar = (url: string) => {
     setSelectedAvatar(url);
@@ -32,6 +33,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
+    query: { enabled: !!address, refetchInterval: 5000 }
   });
 
   const { data: usdcDecimals } = useReadContract({
@@ -44,7 +46,6 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
 
   // Faucet Logic
   const [localLastMint, setLocalLastMint] = useState<number>(0);
-
   useEffect(() => {
     if (address) {
       const saved = localStorage.getItem(`faucet_${address}`);
@@ -58,13 +59,46 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
   useEffect(() => {
     if (isFaucetSuccess) {
       const now = Math.floor(Date.now() / 1000);
-      if (address) localStorage.setItem(`faucet_${address}`, now.toString());
       setLocalLastMint(now);
+      localStorage.setItem(`faucet_${address}`, now.toString());
       setShowSuccess(true);
-      const timer = setTimeout(() => setShowSuccess(false), 5000);
-      return () => clearTimeout(timer);
+      triggerIsland('success', 'ArcFX Assets (aUSDC, aEURC, etc.) Claimed', faucetHash, { type: 'Faucet Claim', asset: 'Multiple', amount: '+10' });
+      setTimeout(() => setShowSuccess(false), 5000);
     }
-  }, [isFaucetSuccess, address]);
+  }, [isFaucetSuccess, address, faucetHash]);
+
+  // Points/Check-in Logic
+  const { data: nextCheckIn, refetch: refetchCheckIn } = useReadContract({
+    address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
+    abi: [
+      { name: 'getNextCheckInTime', type: 'function', stateMutability: 'view', inputs: [{ name: 'user', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] },
+    ],
+    functionName: 'getNextCheckInTime',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address, refetchInterval: 10000 }
+  });
+
+  const { writeContract: checkInWrite, data: checkInHash, isPending: isCheckInPending } = useWriteContract();
+  const { isLoading: isCheckInConfirming, isSuccess: isCheckInSuccess } = useWaitForTransactionReceipt({ hash: checkInHash });
+
+  useEffect(() => {
+    if (isCheckInSuccess) {
+      refetchCheckIn();
+      triggerIsland('success', 'Daily Check-in Successful', checkInHash, { type: 'check-in' });
+    }
+  }, [isCheckInSuccess, checkInHash]);
+
+  const { data: userData } = useReadContract({
+    address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
+    abi: [
+      { name: 'users', type: 'function', stateMutability: 'view', inputs: [{ name: '', type: 'address' }], outputs: [{ name: 'totalPoints', type: 'uint256' }, { name: 'lastCheckIn', type: 'uint256' }, { name: 'currentStreak', type: 'uint256' }, { name: 'totalSwaps', type: 'uint256' }, { name: 'totalLiquidityAdded', type: 'uint256' }] },
+    ],
+    functionName: 'users',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address, refetchInterval: 10000 }
+  });
+
+  const streak = userData ? Number(userData[2]) : 0;
 
   useEffect(() => {
     if (faucetError) {
@@ -74,25 +108,10 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
     }
   }, [faucetError]);
 
-  const handleFaucet = async () => {
-    try {
-      if (!address) return;
-      
-      faucetWrite({
-        address: CONTRACT_ADDRESSES.MULTI_FAUCET as `0x${string}`,
-        abi: FAUCET_ABI.abi as any,
-        functionName: 'claim',
-      });
-    } catch (err) {
-      console.error("Faucet error:", err);
-    }
-  };
-
   return (
     <>
       <header className="w-full h-[76px] flex items-center z-50 border-b border-white/[0.03] backdrop-blur-md">
         <div className="w-full px-8 flex items-center justify-between">
-          {/* LEFT SIDE: Logo & Nav */}
           <div className="flex items-center gap-10">
             <Logo />
             <nav className="flex items-center p-1 bg-white/[0.03] border border-white/[0.05] rounded-md">
@@ -112,54 +131,93 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
             </nav>
           </div>
 
-          {/* RIGHT SIDE: Faucet & Wallet */}
           <div className="flex items-center gap-4">
-            {/* FAUCET BUTTONS */}
             <div className="flex items-center gap-2">
+              {/* Check-in Button */}
               {(() => {
                 const nowUnix = Math.floor(Date.now() / 1000);
-                const inCooldown = localLastMint > 0 && (nowUnix - localLastMint) < 86400;
-                const cooldownRemaining = 86400 - (nowUnix - localLastMint);
-                const cooldownHours = Math.floor(cooldownRemaining / 3600);
-                const cooldownMinutes = Math.floor((cooldownRemaining % 3600) / 60);
-                const faucetDisabled = !isConnected || isFaucetPending || isFaucetConfirming || inCooldown;
+                const canCheckIn = !nextCheckIn || nowUnix >= Number(nextCheckIn);
+                const checkInDisabled = !isConnected || isCheckInPending || isCheckInConfirming || !canCheckIn;
 
                 return (
                   <button 
-                    onClick={handleFaucet}
-                    disabled={faucetDisabled}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md border transition-all duration-500 shadow-xl group ${
+                    onClick={() => {
+                      checkInWrite({
+                        address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
+                        abi: [{ name: 'checkIn', type: 'function', stateMutability: 'nonpayable', inputs: [], outputs: [] }],
+                        functionName: 'checkIn',
+                      });
+                      triggerIsland('processing', 'Authenticating Check-in...');
+                    }}
+                    disabled={checkInDisabled}
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border transition-all duration-700 shadow-lg group ${
                       !isConnected ? 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed' : 
-                      inCooldown ? 'bg-white/5 border-white/10 text-white/40 cursor-not-allowed' :
-                      'bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-blue-500/20 text-blue-400 hover:scale-105 active:scale-95'
+                      !canCheckIn ? 'bg-white/5 border-white/10 text-white/40 cursor-default' :
+                      'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-emerald-500/20 text-emerald-400 hover:scale-105 active:scale-95'
                     }`}
                   >
-                    {isFaucetPending || isFaucetConfirming ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : inCooldown ? (
-                      <ShieldCheck size={12} className="text-white/40" />
+                    {isCheckInPending || isCheckInConfirming ? (
+                      <Loader2 size={10} className="animate-spin" />
                     ) : (
-                      <Zap size={12} className="text-purple-400" />
+                      <CheckCircle2 size={10} className={canCheckIn ? "text-emerald-400" : "text-white/40"} />
                     )}
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em]">
-                      {inCooldown ? `Wait ${cooldownHours}h ${cooldownMinutes}m` : 'ArcFX Faucet'}
+                    <span className="text-[7px] font-black uppercase tracking-widest">
+                      {canCheckIn ? 'Check-in' : `${streak} Day Streak`}
                     </span>
                   </button>
                 );
               })()}
 
+              {/* Faucet Button */}
+              {(() => {
+                const nowUnix = Math.floor(Date.now() / 1000);
+                const inCooldown = localLastMint > 0 && (nowUnix - localLastMint) < 86400;
+                const cooldownRemaining = 86400 - (nowUnix - localLastMint);
+                const hours = Math.floor(cooldownRemaining / 3600);
+                const mins = Math.floor((cooldownRemaining % 3600) / 60);
+
+                return (
+                  <button 
+                    onClick={() => {
+                      faucetWrite({
+                        address: CONTRACT_ADDRESSES.MULTI_FAUCET as `0x${string}`,
+                        abi: FAUCET_ABI.abi || FAUCET_ABI,
+                        functionName: 'claim',
+                      });
+                      triggerIsland('processing', 'Minting ArcFX Assets...');
+                    }}
+                    disabled={!isConnected || isFaucetPending || isFaucetConfirming || inCooldown}
+                    className={`flex items-center gap-2 px-2.5 py-1 rounded-md border transition-all duration-700 shadow-lg group ${
+                      !isConnected ? 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed' : 
+                      inCooldown ? 'bg-white/5 border-white/10 text-white/40 cursor-not-allowed' :
+                      'bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-blue-500/20 text-blue-400 hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(168,85,247,0.15)]'
+                    }`}
+                  >
+                    {isFaucetPending || isFaucetConfirming ? (
+                      <Loader2 size={10} className="animate-spin" />
+                    ) : (
+                      <Droplets size={10} className={inCooldown ? "text-white/40" : "text-blue-400"} />
+                    )}
+                    <span className="text-[8px] font-black uppercase tracking-[0.15em]">
+                      {inCooldown ? `WAIT ${hours}H ${mins}M` : 'ArcFX Faucet'}
+                    </span>
+                  </button>
+                );
+              })()}
+
+              {/* External Circle Faucet Link */}
               <a 
                 href="https://faucet.circle.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:scale-105 transition-all duration-500 shadow-[0_0_20px_rgba(59,130,246,0.2)] active:scale-95 group"
+                className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-all duration-500 group shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:scale-105 active:scale-95"
               >
-                <ExternalLink size={10} className="text-blue-400" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em]">Circle Faucet</span>
+                <ExternalLink size={10} className="animate-pulse" />
+                <span className="text-[8px] font-black uppercase tracking-[0.15em]">USDC Faucet</span>
               </a>
             </div>
 
-            {/* WALLET CONNECTION */}
+            {/* Wallet Connection */}
             {!isConnected ? (
               <button 
                 onClick={openConnectModal}
@@ -200,7 +258,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
         setSelectedAvatar={handleSetAvatar}
       />
 
-      {/* SUCCESS POPUP (SWEET BOX) */}
+      {/* Popups */}
       {showSuccess && (
         <div className="fixed top-28 right-8 z-[100] animate-in slide-in-from-right-10 fade-in duration-500">
           <div className="glass-frame bg-emerald-500/10 border-emerald-500/30 p-4 pr-12 flex items-center gap-4 relative overflow-hidden group">
@@ -219,7 +277,6 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
         </div>
       )}
 
-      {/* ERROR POPUP */}
       {errorMsg && (
         <div className="fixed top-28 right-8 z-[100] animate-in slide-in-from-right-10 fade-in duration-500">
           <div className="glass-frame bg-rose-500/10 border-rose-500/30 p-4 pr-12 flex items-center gap-4">

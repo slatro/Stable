@@ -1,4 +1,3 @@
-
 export const ARC_TESTNET_CONFIG = {
   chainId: 5042002,
   chainName: "Arc Testnet",
@@ -12,7 +11,7 @@ export const CONTRACT_ADDRESSES = {
   ROUTER: "0xce894c000F4003e3F45F9422b6E47EEcf1eAe4b0",
   VAULT: "0x5858585858585858585858585858585858585858",
   MULTI_FAUCET: "0x256B553b2Db34a0B10536cB4628610aFF4E1e7f6",
-  ARC_POINTS: "0xCFb939afdEba0a6f58D62eCD08d5827BB72562a5",
+  ARC_POINTS: "0xC2aDE432A49490bA7230c6f5006016241C997BB6",
   STAKING_CONTRACT: "0x3554D4d10682fdc680A2cb64ADa35f8E7a297a32",
   aUSDC: "0xeD7cb772b49448027901546870425579596faaE1",
   aEURC: "0x429a1D105558f4727453d2a17dF17ac9d5be1EA9",
@@ -37,7 +36,7 @@ export const TOKEN_ICONS = {
 };
 
 export const TOKENS = [
-  { symbol: 'USDC', name: 'Native USDC', decimals: 18, addr: CONTRACT_ADDRESSES.USDC_NATIVE, logo: TOKEN_ICONS.USDC },
+  { symbol: 'USDC', name: 'Native USDC', decimals: 6, addr: CONTRACT_ADDRESSES.USDC_NATIVE, logo: TOKEN_ICONS.USDC },
   { symbol: 'EURC', name: 'Native EURC', decimals: 6, addr: CONTRACT_ADDRESSES.EURC_NATIVE, logo: TOKEN_ICONS.EURC },
   { symbol: 'aUSDC', name: 'Arc Dollar', decimals: 6, addr: CONTRACT_ADDRESSES.aUSDC, logo: TOKEN_ICONS.aUSDC },
   { symbol: 'aEURC', name: 'Arc Euro', decimals: 18, addr: CONTRACT_ADDRESSES.aEURC, logo: TOKEN_ICONS.aEURC },
@@ -46,3 +45,4 @@ export const TOKENS = [
   { symbol: 'aJPYC', name: 'Arc Yen', decimals: 18, addr: CONTRACT_ADDRESSES.aJPYC, logo: TOKEN_ICONS.aJPYC },
   { symbol: 'astUSDC', name: 'Staked Arc Dollar', decimals: 6, addr: CONTRACT_ADDRESSES.astUSDC, logo: TOKEN_ICONS.astUSDC },
 ];
+

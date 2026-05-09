@@ -29,6 +29,32 @@ const TIER_ICONS = {
 export const Leaderboard = () => {
   const { address } = useAccount();
 
+  // Fetch points metadata
+  const { data: nextSnapshot } = useReadContract({
+    address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
+    abi: [{ name: 'getNextSnapshotTime', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint256' }] }],
+    functionName: 'getNextSnapshotTime',
+    query: { refetchInterval: 60000 }
+  });
+
+  const [snapshotCountdown, setSnapshotCountdown] = React.useState('');
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      if (!nextSnapshot) return;
+      const now = Math.floor(Date.now() / 1000);
+      const diff = Number(nextSnapshot) - now;
+      if (diff <= 0) {
+        setSnapshotCountdown('00:00:00');
+        return;
+      }
+      const h = Math.floor(diff / 3600);
+      const m = Math.floor((diff % 3600) / 60);
+      const s = diff % 60;
+      setSnapshotCountdown(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [nextSnapshot]);
+
   // Fetch leaderboard data from contract
   const { data: rawLeaderboard } = useReadContract({
     address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
@@ -38,9 +64,7 @@ export const Leaderboard = () => {
   });
 
   const leaderboardData = useMemo(() => {
-    if (!rawLeaderboard) return [];
-    
-    const [addresses, points] = rawLeaderboard as [string[], bigint[]];
+    const [addresses, points] = (rawLeaderboard as [string[], bigint[]]) || [[], []];
     const entries = addresses.map((addr, i) => ({
       address: addr,
       points: Number(points[i])
@@ -68,6 +92,7 @@ export const Leaderboard = () => {
 
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-8 animate-fade-in py-4 px-2">
+
       {/* TOP CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="premium-card p-5 flex flex-col gap-2 bg-gradient-to-br from-blue-500/10 to-transparent relative overflow-hidden group border border-blue-500/10 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
@@ -126,10 +151,23 @@ export const Leaderboard = () => {
       {/* LEADERBOARD TABLE */}
       <div className="premium-card overflow-hidden border border-white/5">
         <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/[0.02]">
-          <div className="flex items-center gap-4">
-            <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
-            <h3 className="text-xs font-black text-white uppercase tracking-[0.4em]">Global Rankings</h3>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
+              <h3 className="text-xs font-black text-white uppercase tracking-[0.4em]">Global Rankings</h3>
+            </div>
+            
+            <div className="h-8 w-px bg-white/5" />
+            
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-white tabular-nums tracking-widest">{snapshotCountdown || '--:--:--'}</span>
+                <span className="text-[7px] font-black text-emerald-400 uppercase tracking-widest animate-pulse">Live Tracking</span>
+              </div>
+              <span className="text-[7px] font-bold text-white/20 uppercase tracking-tighter">Next Snapshot UTC 00:00</span>
+            </div>
           </div>
+          
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
             <input 

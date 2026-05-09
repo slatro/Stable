@@ -9,6 +9,10 @@ import { TradingChart } from './components/TradingChart';
 import { NotificationProvider } from './context/NotificationContext';
 import { TOKENS } from './config/contracts';
 import { Logo } from './components/Logo';
+import { TransactionIsland } from './components/TransactionIsland';
+import { TransactionHistory } from './components/TransactionHistory';
+import { LimitOrders } from './components/LimitOrders';
+import { PointsProvider } from './context/PointsContext';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('arc_active_tab') || 'swap');
@@ -41,17 +45,19 @@ export default function App() {
           }} />
         );
         case 'swap': return (
-          <div className="flex flex-col lg:flex-row gap-6 items-start animate-in slide-in-from-bottom-4 duration-700 w-full">
-            <div className="hidden lg:block flex-1 h-[600px]">
-              <TradingChart tokenIn={tokenIn} tokenOut={tokenOut} />
+          <div className="flex flex-col gap-8 animate-in slide-in-from-bottom-4 duration-700 w-full">
+            <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
+              <div className="hidden lg:block flex-1 h-[600px]">
+                <TradingChart tokenIn={tokenIn} tokenOut={tokenOut} />
+              </div>
+              <SwapCard
+                tokenIn={tokenIn}
+                setTokenIn={setTokenIn}
+                tokenOut={tokenOut}
+                setTokenOut={setTokenOut}
+                initialMode={swapMode}
+              />
             </div>
-            <SwapCard
-              tokenIn={tokenIn}
-              setTokenIn={setTokenIn}
-              tokenOut={tokenOut}
-              setTokenOut={setTokenOut}
-              initialMode={swapMode}
-            />
           </div>
         );
         case 'pools': return <PoolsPanel />;
@@ -66,7 +72,9 @@ export default function App() {
 
   return (
     <NotificationProvider>
+      <PointsProvider>
       <div className="min-h-screen flex flex-col font-sans relative overflow-x-hidden bg-transparent">
+        <TransactionIsland />
         {/* ATMOSPHERIC BACKGROUND HANDLED BY CSS */}
         <div className="bg-orbs" />
 
@@ -79,6 +87,14 @@ export default function App() {
           <main className="flex-1 overflow-y-auto">
             <div className="max-w-[1600px] mx-auto px-8 pt-7 pb-10">
               {renderContent()}
+              
+              {/* GLOBAL TRANSACTION HISTORY & LIMIT ORDERS - Always mounted to listen for events */}
+              <div className={`mt-12 space-y-12 ${activeTab === 'dashboard' ? 'hidden' : 'block'}`}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                   <LimitOrders />
+                   <TransactionHistory />
+                </div>
+              </div>
             </div>
           </main>
 
@@ -97,6 +113,7 @@ export default function App() {
           </footer>
         </div>
       </div>
+      </PointsProvider>
     </NotificationProvider>
   );
 }
