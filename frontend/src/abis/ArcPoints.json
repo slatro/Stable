@@ -87,7 +87,13 @@
       "type": "event"
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_referrer",
+          "type": "address"
+        }
+      ],
       "name": "checkIn",
       "outputs": [],
       "stateMutability": "nonpayable",

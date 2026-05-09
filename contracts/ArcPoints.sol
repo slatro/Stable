@@ -44,10 +44,17 @@ contract ArcPoints is Ownable {
         emit ReferrerSet(msg.sender, _referrer);
     }
 
-    function checkIn() external {
+    function checkIn(address _referrer) external {
         UserInfo storage user = users[msg.sender];
         require(block.timestamp >= user.lastCheckIn + COOLDOWN, "Cooldown active");
         
+        // Automatic Referrer Binding
+        if (_referrer != address(0) && referrers[msg.sender] == address(0) && _referrer != msg.sender && isUser[_referrer]) {
+            referrers[msg.sender] = _referrer;
+            referralCount[_referrer] += 1;
+            emit ReferrerSet(msg.sender, _referrer);
+        }
+
         if (!isUser[msg.sender]) {
             isUser[msg.sender] = true;
             userList.push(msg.sender);

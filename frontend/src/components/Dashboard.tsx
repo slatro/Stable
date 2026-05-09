@@ -418,6 +418,30 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
 
   const [snapshotCountdown, setSnapshotCountdown] = React.useState('');
 
+  const { writeContract: settlePoints } = useWriteContract();
+  const { writeContract: checkInWrite, data: checkInHash, isPending: isCheckingIn } = useWriteContract();
+  const { isLoading: isCheckInConfirming, isSuccess: isCheckInSuccess } = useWaitForTransactionReceipt({ hash: checkInHash });
+
+  useEffect(() => {
+    if (isCheckInSuccess) {
+      localStorage.removeItem('arc_pending_ref');
+      notify('success', 'Points Claimed!', 'Your daily points and referral have been recorded.');
+      refetchPoints();
+    }
+  }, [isCheckInSuccess]);
+
+  const handleCheckIn = () => {
+    if (!isCheckInAvailable) return;
+    play('click');
+    const ref = localStorage.getItem('arc_pending_ref') || '0x0000000000000000000000000000000000000000';
+    checkInWrite({
+      address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
+      abi: POINTS_ABI.abi || POINTS_ABI,
+      functionName: 'checkIn',
+      args: [ref as `0x${string}`]
+    });
+  };
+
   React.useEffect(() => {
     const timer = setInterval(() => {
       if (!nextSnapshot) return;
@@ -425,7 +449,12 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
       const diff = Number(nextSnapshot) - now;
       if (diff <= 0) {
         if (pendingPoints > 0) {
-          settlePoints(pendingPoints);
+          settlePoints({
+            address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
+            abi: POINTS_ABI.abi || POINTS_ABI,
+            functionName: 'recordActivity',
+            args: [address, BigInt(pendingPoints), 'Daily Activity']
+          });
           notify('success', `Snapshot Settled: +${pendingPoints} Points Added!`, 'Snapshot complete.');
         }
         setSnapshotCountdown('SETTLING...');
@@ -438,7 +467,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
       setSnapshotCountdown(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
     }, 1000);
     return () => clearInterval(timer);
-  }, [nextSnapshot, refetchSnapshot, pendingPoints, notify, settlePoints]);
+  }, [nextSnapshot, refetchSnapshot, pendingPoints, notify, address]);
 
 
   // Prepare assets for the chart
@@ -489,7 +518,9 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
           value={userPoints !== undefined ? (Number(userPoints) + localPointsOffset).toString() : '...'}
           isSpecial={true}
           color="bg-blue-500/10 text-blue-400"
-          extraInfo={isCheckInAvailable ? "READY TO CLAIM" : (snapshotCountdown ? `Next: ${snapshotCountdown}` : undefined)}
+          onAction={isCheckInAvailable ? handleCheckIn : undefined}
+          actionLabel={isCheckingIn || isCheckInConfirming ? "Claiming..." : "Claim Points"}
+          extraInfo={!isCheckInAvailable && snapshotCountdown ? `Next: ${snapshotCountdown}` : undefined}
           pendingAmount={pendingPoints}
         />
         <StatCard 
@@ -500,8 +531,6 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
           color="bg-purple-500/10 text-purple-400"
           onAction={copyRefLink}
           actionLabel={refCopied ? "Copied!" : "Copy Link"}
-          extraInfo={showClaimInvite ? (isBinding || isBindingConfirming ? "Claiming..." : "Claim Invite") : undefined}
-          onExtraAction={showClaimInvite ? () => handleBindReferrer(pendingRef!) : undefined}
         />
         <StatCard title="PORTFOLIO VALUE" value={`$${totalPortfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} change="+1.2%" icon={TrendingUp} color="bg-emerald-500/10 text-emerald-400" />
         <StatCard title="ACTIVE POSITIONS" value={poolDetails.length.toString()} icon={Wallet} color="bg-purple-500/10 text-purple-400" />
