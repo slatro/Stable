@@ -39,7 +39,6 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setLocalPointsOffset(val);
   }, [address]);
 
-  const { notify } = useNotifications();
   const processedTxs = useRef<Set<string>>(new Set());
 
   // Global transaction listener
@@ -62,15 +61,15 @@ export const PointsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setLocalSwapCount(prev => {
           const next = prev + 1;
           localStorage.setItem(`arc_swap_count_${address}`, next.toString());
-          
-          let label = '+1 Arc Point Earned!';
-          if (isLP) label = '+10 LP Points Earned!';
-          if (isStake) label = '+5 Staking Points Earned!';
-          
-          play('points');
-          notify('success', label, `${type} activity recorded.`);
           return next;
         });
+
+        let label = '+1 Arc Point Earned!';
+        if (isLP) label = '+10 LP Points Earned!';
+        if (isStake) label = '+5 Staking Points Earned!';
+        
+        play('points');
+        notify('success', label, `${type} activity recorded.`);
       }
     };
     

@@ -59,7 +59,7 @@ const AirdropIcon = () => (
   </svg>
 );
 
-const StatCard = ({ title, value, change, icon: Icon, color, imageIcon, glowColor, isSpecial, extraInfo, pendingAmount }: any) => (
+const StatCard = ({ title, value, change, icon: Icon, color, imageIcon, glowColor, isSpecial, extraInfo, pendingAmount, onAction, actionLabel }: any) => (
   <div className={`glass-frame px-4 py-3 flex items-center gap-4 group hover:border-white/20 transition-all duration-700 relative overflow-hidden h-[72px] ${isSpecial ? 'border-blue-400/40 bg-blue-400/[0.08]' : ''}`}>
     <div className="absolute top-0 right-0 w-16 h-16 bg-white/[0.02] rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-700" />
     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xl border border-white/5 ${color}`}>
@@ -72,7 +72,14 @@ const StatCard = ({ title, value, change, icon: Icon, color, imageIcon, glowColo
         {change && <div className={`flex items-center gap-0.5 text-[9px] font-black italic tracking-widest ${change.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap`}>{change}</div>}
       </div>
     </div>
-    {extraInfo && (
+    {onAction ? (
+      <button 
+        onClick={(e) => { e.stopPropagation(); onAction(); }}
+        className="ml-auto px-4 py-2 bg-white/5 hover:bg-white text-white/60 hover:text-black border border-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg"
+      >
+        {actionLabel || 'Action'}
+      </button>
+    ) : extraInfo && (
       <div className="flex flex-col items-end ml-auto">
         <span className="text-[9px] font-black text-blue-400/60 uppercase tracking-widest whitespace-nowrap mb-0.5">{extraInfo}</span>
         {pendingAmount !== undefined && (
@@ -133,93 +140,24 @@ const AssetRow = ({ asset, balance, price, change24h, onAction }: any) => {
   );
 };
 
-const ReferralCard = ({ address, refCount, refPoints, onBind, isBinding }: any) => {
-  const [copied, setCopied] = React.useState(false);
-  const { play } = useSound();
-  const pendingRef = localStorage.getItem('arc_pending_ref');
-
-  const shareUrl = `https://arc-fx.vercel.app/?ref=${address}`;
-
-  const copyToClipboard = () => {
-    play('click');
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-      {/* Invite Link Card */}
-      <div className="xl:col-span-2 glass-frame p-6 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-1000" />
-        <div className="flex flex-col md:flex-row items-center gap-6 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
-            <Users size={24} />
-          </div>
-          <div className="flex-1 space-y-2">
-            <h3 className="text-xs font-black text-white uppercase tracking-[0.3em]">Referral System</h3>
-            <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Invite friends and earn 10% of their daily points activity forever.</p>
-            <div className="flex items-center gap-2 mt-4 p-1 bg-black/40 border border-white/5 rounded-xl">
-              <div className="flex-1 px-4 py-2 font-mono text-[10px] text-blue-400/80 truncate">{shareUrl}</div>
-              <button
-                onClick={copyToClipboard}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/20 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
-              >
-                {copied ? <Check size={12} /> : <Copy size={12} />}
-                {copied ? 'Copied' : 'Copy Link'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Referral Stats Card */}
-      <div className="glass-frame p-6 flex flex-col justify-between group">
-        <div className="flex items-center justify-between mb-4">
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-lg shadow-purple-500/10">
-            <Gift size={20} />
-          </div>
-          <div className="flex flex-col items-end">
-            <span className="text-[18px] font-black text-white tabular-nums leading-none">+{refPoints}</span>
-            <span className="text-[8px] font-black text-white/20 uppercase tracking-widest mt-1">Total Earned</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-auto">
-          <div className="flex flex-col">
-            <span className="text-[20px] font-black text-white tabular-nums leading-none">{refCount}</span>
-            <span className="text-[8px] font-black text-white/20 uppercase tracking-widest mt-1">Referred Users</span>
-          </div>
-          {pendingRef && (
-            <button
-              onClick={() => onBind(pendingRef)}
-              disabled={isBinding}
-              className="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all animate-pulse"
-            >
-              {isBinding ? <Loader2 size={12} className="animate-spin" /> : 'Bind Pending Ref'}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const useTotalWalletValue = (balances: any, livePrices: any, nativeBalances: any) => {
   return useMemo(() => {
     if (!livePrices || !balances || !Array.isArray(balances)) return 0;
     let total = 0;
     try {
-      if (nativeBalances.usdc && livePrices['USDC']) {
-        const bal = parseFloat(formatUnits(BigInt(nativeBalances.usdc.value.toString()), nativeBalances.usdc.decimals));
+      if (nativeBalances?.usdc?.value && livePrices['USDC']) {
+        const bal = parseFloat(formatUnits(BigInt(nativeBalances.usdc.value.toString()), nativeBalances.usdc.decimals || 18));
         total += bal * livePrices['USDC'].price;
       }
-      if (nativeBalances.eurc !== undefined && livePrices['EURC']) {
+      if (nativeBalances?.eurc !== undefined && livePrices['EURC']) {
         const bal = parseFloat(formatUnits(BigInt(nativeBalances.eurc.toString()), 6));
         total += bal * livePrices['EURC'].price;
       }
       balances.slice(2).forEach((res: any, i: number) => {
-        if (res.status === 'success' && res.result !== undefined && res.result !== null) {
+        if (res?.status === 'success' && res?.result !== undefined && res?.result !== null) {
           const token = TOKENS[i + 2];
+          if (!token) return;
           const bal = parseFloat(formatUnits(BigInt(res.result.toString()), token.decimals || 18));
           const price = livePrices[token.symbol]?.price || 0;
           total += bal * price;
@@ -242,6 +180,8 @@ export const Dashboard = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
 
 const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => void }) => {
   const { address } = useAccount();
+  const { play } = useSound();
+  const { notify } = useNotifications();
   const priceContext = usePrices();
   const prices = priceContext?.prices || {};
 
@@ -467,7 +407,6 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
   }, [lpValue, stakedValueUsd, userPointsRes, localSwapCount, address]);
 
   const [snapshotCountdown, setSnapshotCountdown] = React.useState('');
-  const { notify } = useNotifications();
 
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -519,6 +458,15 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
     return arr;
   }, [usdcNativeBal, eurcNativeBal, balances, prices]);
 
+  const [refCopied, setRefCopied] = React.useState(false);
+  const copyRefLink = () => {
+    play('click');
+    const url = `https://arc-fx.vercel.app/?ref=${address}`;
+    navigator.clipboard.writeText(url);
+    setRefCopied(true);
+    setTimeout(() => setRefCopied(false), 2000);
+  };
+
   return (
     <div className="w-full space-y-8 px-2">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -530,20 +478,22 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
           extraInfo={isCheckInAvailable ? "READY TO CLAIM" : (snapshotCountdown ? `Next: ${snapshotCountdown}` : undefined)}
           pendingAmount={pendingPoints}
         />
+        <StatCard 
+          title="REFERRAL" 
+          value={(refCount || 0).toString()} 
+          change={`+${refPoints || 0} pts`}
+          icon={Users} 
+          color="bg-purple-500/10 text-purple-400"
+          onAction={localStorage.getItem('arc_pending_ref') ? () => handleBindReferrer(localStorage.getItem('arc_pending_ref')!) : copyRefLink}
+          actionLabel={localStorage.getItem('arc_pending_ref') ? (isBinding || isBindingConfirming ? "Binding..." : "Bind Referrer") : (refCopied ? "Copied!" : "Copy Link")}
+          extraInfo={localStorage.getItem('arc_pending_ref') ? "PENDING REF" : undefined}
+        />
         <StatCard title="PORTFOLIO VALUE" value={`$${totalPortfolioValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} change="+1.2%" icon={TrendingUp} color="bg-emerald-500/10 text-emerald-400" />
-        <StatCard title="YIELD EARNED" value={`$${estimatedYield}`} icon={Zap} color="bg-amber-500/10 text-amber-400" />
         <StatCard title="ACTIVE POSITIONS" value={poolDetails.length.toString()} icon={Wallet} color="bg-purple-500/10 text-purple-400" />
       </div>
 
       <PortfolioChart totalValue={totalPortfolioValue} assets={portfolioAssets} />
 
-      <ReferralCard
-        address={address}
-        refCount={refCount}
-        refPoints={refPoints}
-        onBind={handleBindReferrer}
-        isBinding={isBinding || isBindingConfirming}
-      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div className="space-y-4">

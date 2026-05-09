@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, CheckCircle2, AlertCircle, ExternalLink, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, ExternalLink, ArrowRight, X } from 'lucide-react';
 
 export type IslandState = 'idle' | 'processing' | 'success' | 'error';
 
@@ -102,7 +102,7 @@ export const TransactionIsland = () => {
               onClick={() => setIsVisible(false)}
               className="p-2 rounded-xl hover:bg-white/10 text-white/20 hover:text-white transition-all"
             >
-              <AlertCircle size={14} className="rotate-45" />
+              <X size={14} />
             </button>
           </div>
         </div>
