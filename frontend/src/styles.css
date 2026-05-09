@@ -229,3 +229,11 @@ input[type=number] {
   z-index: 0;
   background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 80%);
 }
+@keyframes scan-line {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.animate-scan-line {
+  animation: scan-line 3s linear infinite;
+}

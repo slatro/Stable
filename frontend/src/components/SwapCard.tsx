@@ -576,6 +576,18 @@ export const SwapCard = ({
           )}
         </button>
       </div>
+      <div className="flex flex-col gap-1 mt-2">
+        <div className="w-full h-[1px] bg-white/[0.03] relative overflow-hidden">
+          <div className="absolute top-0 h-full w-24 bg-gradient-to-r from-transparent via-blue-400/40 to-transparent animate-scan-line" />
+        </div>
+        <div className="flex justify-between items-center px-1 opacity-20">
+          <span className="text-[6px] font-black text-white uppercase tracking-[0.4em]">ARCFX DATA PULSE</span>
+          <div className="flex items-center gap-1">
+            <div className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[6px] font-black text-emerald-400 uppercase tracking-[0.2em]">NETWORK ACTIVE</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
