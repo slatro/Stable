@@ -115,33 +115,33 @@ export default function App() {
                 </div>
               </main>
 
-              <footer className="py-12 px-8 border-t border-white/[0.03] mt-auto bg-transparent">
-                <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-                  <div className="flex items-center gap-16">
+              <footer className="py-8 md:py-12 px-4 md:px-8 border-t border-white/[0.03] mt-auto bg-transparent">
+                <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-center gap-10 md:gap-8">
+                  <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
                     <Logo size={14} />
-                    <div className="flex items-center gap-6 translate-y-[1px]">
+                    <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-3">
                        <a href="https://x.com/slatro_eth" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[9px] font-black text-white/40 hover:text-white uppercase tracking-[0.2em] transition-colors group">
                          <XIcon size={12} className="text-white group-hover:scale-110 transition-transform" />
-                         X (prev. Twitter)
+                         X
                        </a>
-                       <div className="w-px h-3 bg-white/10" />
+                       <div className="hidden md:block w-px h-3 bg-white/10" />
                        <a href="https://github.com/slatro" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[9px] font-black text-white/40 hover:text-white uppercase tracking-[0.2em] transition-colors group">
                          <Github size={12} className="text-white group-hover:scale-110 transition-transform" />
                          Github
                        </a>
-                       <div className="w-px h-3 bg-white/10" />
+                       <div className="hidden md:block w-px h-3 bg-white/10" />
                        <a href="https://testnet.arcscan.app/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[9px] font-black text-white/40 hover:text-white uppercase tracking-[0.2em] transition-colors group">
                          <Search size={12} className="text-blue-400 group-hover:scale-110 transition-transform" />
-                         Arc Scan
+                         Scan
                        </a>
-                       <div className="w-px h-3 bg-white/10" />
+                       <div className="hidden md:block w-px h-3 bg-white/10" />
                        <a href="#" className="flex items-center gap-2 text-[9px] font-black text-white/40 hover:text-white uppercase tracking-[0.2em] transition-colors group">
                          <BookOpen size={12} className="text-emerald-400 group-hover:scale-110 transition-transform" />
                          Docs
                        </a>
                     </div>
                   </div>
-                  <div className="text-[8px] font-black text-white/10 uppercase tracking-[0.4em]">© 2026 ARCFX PROTOCOL. ALL RIGHTS RESERVED.</div>
+                  <div className="text-[8px] font-black text-white/10 uppercase tracking-[0.2em] md:tracking-[0.4em] text-center">© 2026 ARCFX PROTOCOL.</div>
                 </div>
               </footer>
             </div>

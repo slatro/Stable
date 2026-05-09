@@ -233,24 +233,24 @@ input[type=number] {
 /* MOBILE BRIGHTNESS BOOST - ONLY FOR MOBILE VIEWPORTS */
 @media (max-width: 768px) {
   body {
-    background-color: #080c14 !important; /* Lightened from #020408 */
+    background-color: #05080c !important; /* Slightly darker than previous boost but lighter than original */
     background-image: 
-      radial-gradient(at 0% 50%, #1e3a8a 0%, transparent 70%),
-      radial-gradient(at 100% 0%, #1e3a8a 0%, transparent 80%) !important;
+      radial-gradient(at 0% 50%, #152c6e 0%, transparent 70%),
+      radial-gradient(at 100% 0%, #152c6e 0%, transparent 80%) !important;
   }
 
   .premium-card {
-    background: rgba(255, 255, 255, 0.05) !important; /* Increased transparency brightness */
-    backdrop-filter: blur(12px) saturate(140%) brightness(1.25) !important;
-    -webkit-backdrop-filter: blur(12px) saturate(140%) brightness(1.25) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(255, 255, 255, 0.04) !important; /* Reduced from 0.05 */
+    backdrop-filter: blur(10px) saturate(120%) brightness(1.15) !important; /* Toned down from 1.25 */
+    -webkit-backdrop-filter: blur(10px) saturate(120%) brightness(1.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
   }
 
   .bg-main-glow {
-    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.07) 0%, transparent 85%) !important;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 85%) !important;
   }
 
   .text-white\/40 {
-    color: rgba(255, 255, 255, 0.55) !important; /* Boosted accessibility for dim text */
+    color: rgba(255, 255, 255, 0.45) !important; /* Balanced accessibility */
   }
 }
