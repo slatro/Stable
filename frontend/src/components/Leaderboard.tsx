@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Trophy, Medal, Star, ChevronRight, User, Search, Target, Zap, ShieldCheck } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Trophy, Medal, Star, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, User, Search, Target, Zap, ShieldCheck } from 'lucide-react';
 import { useAccount, useReadContract } from 'wagmi';
 import { CONTRACT_ADDRESSES } from '../config/contracts';
 import POINTS_ABI from '../abis/ArcPoints.json';
@@ -28,6 +28,9 @@ const TIER_ICONS = {
 
 export const Leaderboard = () => {
   const { address } = useAccount();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   // Fetch points metadata
   const { data: nextSnapshot } = useReadContract({
@@ -90,6 +93,27 @@ export const Leaderboard = () => {
 
   const userRank = leaderboardData.find(u => u.isUser);
 
+  // Search filter
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return leaderboardData;
+    return leaderboardData.filter(u => 
+      u.address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [leaderboardData, searchTerm]);
+
+  // Reset page on search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
+
+  // Paginated subset
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredData.slice(start, start + itemsPerPage);
+  }, [filteredData, currentPage]);
+
   return (
     <div className="w-full max-w-5xl mx-auto flex flex-col gap-8 animate-fade-in py-4 px-2">
 
@@ -102,15 +126,25 @@ export const Leaderboard = () => {
                  <Trophy className="text-blue-400" size={16} />
               </div>
               <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Your Rank</span>
-           </div>
-           <div className="flex flex-col">
-              <span className="text-3xl font-black text-white tracking-tighter tabular-nums">
-                {userRank ? `#${userRank.rank}` : 'N/A'}
-              </span>
-              <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest mt-0.5">
-                {leaderboardData.length > 0 ? `Top ${Math.round(((userRank?.rank || 100) / (leaderboardData.length)) * 100)}% of users` : 'No data yet'}
-              </span>
-           </div>
+            </div>
+            <div className="flex flex-col">
+               <span className="text-3xl font-black text-white tracking-tighter tabular-nums">
+                 {userRank ? `#${userRank.rank}` : 'N/A'}
+               </span>
+               <div className="flex items-center gap-1.5 mt-0.5">
+                 <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">
+                   {leaderboardData.length > 0 ? `Top ${Math.round(((userRank?.rank || 100) / (leaderboardData.length)) * 100)}% of users` : 'No data yet'}
+                 </span>
+                 {leaderboardData.length > 0 && (
+                   <>
+                     <span className="text-white/20 text-[9px] font-light">|</span>
+                     <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">
+                       Total: {leaderboardData.length.toLocaleString()}
+                     </span>
+                   </>
+                 )}
+               </div>
+            </div>
         </div>
 
         <div className="premium-card p-5 flex flex-col gap-2 bg-gradient-to-br from-purple-500/10 to-transparent relative overflow-hidden group border border-purple-500/10 shadow-[0_0_50px_rgba(168,85,247,0.1)]">
@@ -172,6 +206,8 @@ export const Leaderboard = () => {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" />
             <input 
               type="text" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search wallet..." 
               className="bg-black/20 border border-white/5 rounded-xl pl-9 pr-3 py-2 text-[10px] text-white placeholder:text-white/10 focus:outline-none focus:border-blue-500/30 w-48 transition-all"
             />
@@ -189,7 +225,7 @@ export const Leaderboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.02]">
-              {leaderboardData.length > 0 ? leaderboardData.map((user) => {
+              {paginatedData.length > 0 ? paginatedData.map((user) => {
                 const TierIcon = (TIER_ICONS as any)[user.tier];
                 return (
                   <tr key={user.address} className={`group transition-all duration-300 ${user.isUser ? 'bg-blue-500/[0.04]' : 'hover:bg-white/[0.02]'}`}>
@@ -250,6 +286,45 @@ export const Leaderboard = () => {
             </tbody>
           </table>
         </div>
+
+        {/* PAGINATION FOOTER */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-white/5 bg-white/[0.01]">
+            <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] monospace">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-white/[0.02] text-white/60 hover:text-white transition-all"
+              >
+                <ChevronsLeft size={12} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-white/[0.02] text-white/60 hover:text-white transition-all mr-2"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-white/[0.02] text-white/60 hover:text-white transition-all"
+              >
+                <ChevronRight size={12} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/5 disabled:opacity-20 disabled:hover:bg-white/[0.02] text-white/60 hover:text-white transition-all"
+              >
+                <ChevronsRight size={12} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
