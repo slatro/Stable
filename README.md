@@ -1,6 +1,6 @@
-# ArcFX - Stablecoin FX AMM on Arc Testnet
+# Stable - Stablecoin FX AMM on Arc Testnet
 
-ArcFX is a professional hackathon MVP showcasing a stablecoin FX AMM built on the Arc Testnet. It allows users to swap mock USDC and EURC, provide liquidity, and experience the predictable settlement performance of the Arc network.
+Stable is a professional hackathon MVP showcasing a stablecoin FX AMM built on the Arc Testnet. It allows users to swap mock USDC and EURC, provide liquidity, and experience the predictable settlement performance of the Arc network.
 
 ## 🚀 Features
 - **Wallet Connect**: Seamless integration with Arc Testnet.
@@ -17,7 +17,7 @@ ArcFX is a professional hackathon MVP showcasing a stablecoin FX AMM built on th
 
 ## 📂 Project Structure
 ```text
-ArcFX/
+Stable/
 ├── contracts/        # Solidity smart contracts
 ├── scripts/          # Deployment and interaction scripts
 ├── test/             # Smart contract tests
