@@ -123,7 +123,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
           <div className="flex items-center justify-between w-full md:w-auto gap-4">
             <div className="relative flex flex-col py-1">
               <Logo />
-              <span className="absolute -bottom-2 left-[82px] text-[6.5px] md:text-[7px] font-black text-emerald-400/80 uppercase tracking-[0.25em] whitespace-nowrap">Live on Arc Testnet</span>
+              <span className="absolute bottom-0.5 left-[82px] text-[6.5px] md:text-[7px] font-black text-emerald-400/80 uppercase tracking-[0.25em] whitespace-nowrap">Live on Arc Testnet</span>
             </div>
             
             <div className="md:hidden flex items-center gap-2">
