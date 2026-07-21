@@ -1,6 +1,6 @@
 # Stablr - Stablecoin FX AMM on Arc Testnet
 
-Stablr is a professional hackathon MVP showcasing a stablecoin FX AMM built on the Arc Testnet. It allows users to swap mock USDC and EURC, provide liquidity, and experience the predictable settlement performance of the Arc network.
+Stablr is a decentralized stablecoin FX AMM protocol built on the Arc Testnet. It allows users to swap mock USDC and EURC, provide liquidity, and experience the predictable settlement performance of the Arc network.
 
 ## 🚀 Features
 - **Wallet Connect**: Seamless integration with Arc Testnet.
@@ -63,13 +63,10 @@ npm run dev
 ## ⚠️ Important Warnings
 1. **Testnet only**: Use a test wallet only. Do not send real funds.
 2. **Mock assets**: mUSDC and mEURC have no real-world value.
-3. **Not audited**: This is a hackathon MVP demo.
+3. **Not audited**: This is a beta testnet demo.
 
 ## 🔮 Future Improvements
 - StableSwap curve for low-slippage stablecoin pairs.
 - CCTP integration for cross-chain settlement.
 - Advanced LP analytics and yield tracking.
 - Agent payment routing.
-
----
-Built for the Arc Network Hackathon.
