@@ -123,7 +123,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
           <div className="flex items-center justify-between w-full md:w-auto gap-4">
             <div className="relative flex flex-col py-1">
               <Logo />
-              <div className="absolute bottom-1.5 left-[78px] flex flex-col items-center whitespace-nowrap">
+              <div className="absolute bottom-1.5 left-[80px] flex flex-col items-center whitespace-nowrap">
                 <span 
                   className="text-[6.5px] md:text-[7px] font-black text-blue-400 uppercase tracking-[0.25em] pb-0.5"
                   style={{ textShadow: '0 0 6px rgba(96, 165, 250, 0.6)' }}
