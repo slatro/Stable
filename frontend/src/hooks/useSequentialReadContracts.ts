@@ -3,8 +3,18 @@ import { readContract } from '@wagmi/core';
 import { config } from '../config/wagmi';
 
 export function useSequentialReadContracts({ contracts, query }: any) {
+  // Sanitize queryKey to prevent BigInt serialization crashes in React Query
+  const safeKey = contracts?.map((c: any) => {
+    if (!c) return null;
+    return {
+      address: c.address,
+      functionName: c.functionName,
+      args: c.args?.map((a: any) => typeof a === 'bigint' ? a.toString() : a)
+    };
+  });
+
   return useQuery({
-    queryKey: ['sequentialRead', contracts],
+    queryKey: ['sequentialRead', safeKey],
     queryFn: async () => {
       if (!contracts || contracts.length === 0) return [];
       const results = await Promise.all(
