@@ -73,7 +73,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
   // Points/Check-in Logic
   const { data: nextCheckIn, refetch: refetchCheckIn } = useReadContract({
     address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
-    abi: POINTS_ABI as any,
+    abi: POINTS_ABI.abi || POINTS_ABI as any,
     functionName: 'getNextCheckInTime',
     args: address ? [address] : undefined,
     chainId: ARC_TESTNET_CONFIG.chainId,
@@ -95,7 +95,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
 
   const { data: userData, refetch: refetchUserData } = useReadContract({
     address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
-    abi: POINTS_ABI as any,
+    abi: POINTS_ABI.abi || POINTS_ABI as any,
     functionName: 'users',
     args: address ? [address] : undefined,
     query: { enabled: !!address, refetchInterval: 10000 }
@@ -186,7 +186,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
                       const ref = localStorage.getItem('arc_pending_ref') || '0x0000000000000000000000000000000000000000';
                       checkInWrite({
                         address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
-                        abi: POINTS_ABI as any,
+                        abi: POINTS_ABI.abi || POINTS_ABI as any,
                         functionName: 'checkIn',
                         args: [ref as `0x${string}`],
                         chainId: ARC_TESTNET_CONFIG.chainId,
@@ -226,7 +226,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
                       play('click');
                       faucetWrite({
                         address: CONTRACT_ADDRESSES.MULTI_FAUCET as `0x${string}`,
-                        abi: FAUCET_ABI as any,
+                        abi: FAUCET_ABI.abi || FAUCET_ABI as any,
                         functionName: 'claim',
                         chainId: ARC_TESTNET_CONFIG.chainId,
                       });

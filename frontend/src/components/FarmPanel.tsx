@@ -27,7 +27,7 @@ export const FarmPanel: React.FC = () => {
 
   const { data: lpBalance, refetch: refetchLpBalance } = useReadContract({
     address: lpTokenAddress as `0x${string}`,
-    abi: ERC20_ABI as any,
+    abi: ERC20_ABI.abi || ERC20_ABI as any,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     query: { enabled: !!address, refetchInterval: 5000 }
@@ -35,7 +35,7 @@ export const FarmPanel: React.FC = () => {
 
   const { data: lpAllowance, refetch: refetchAllowance } = useReadContract({
     address: lpTokenAddress as `0x${string}`,
-    abi: ERC20_ABI as any,
+    abi: ERC20_ABI.abi || ERC20_ABI as any,
     functionName: 'allowance',
     args: address ? [address, CONTRACT_ADDRESSES.FARM] : undefined,
     query: { enabled: !!address, refetchInterval: 5000 }
@@ -85,7 +85,7 @@ export const FarmPanel: React.FC = () => {
     const tid = notify({ type: 'loading', title: 'Approving', message: `Allowing Farm to use your LP Tokens...` });
     writeAction({
       address: lpTokenAddress as `0x${string}`,
-      abi: ERC20_ABI as any,
+      abi: ERC20_ABI.abi || ERC20_ABI as any,
       functionName: 'approve',
       args: [CONTRACT_ADDRESSES.FARM, parseUnits("1000000", 18)]
     }, {

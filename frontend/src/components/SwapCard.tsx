@@ -193,8 +193,8 @@ export const SwapCard = ({
   // --- STAKING HOOKS ---
   const { data: stakingData } = useReadContracts({
     contracts: [
-      { address: (CONTRACT_ADDRESSES as any).STAKING_CONTRACT as `0x${string}`, abi: STAKING_ABI as any, functionName: 'getExchangeRate' },
-      { address: (CONTRACT_ADDRESSES as any).STAKING_CONTRACT as `0x${string}`, abi: STAKING_ABI as any, functionName: 'totalSupply' },
+      { address: (CONTRACT_ADDRESSES as any).STAKING_CONTRACT as `0x${string}`, abi: STAKING_ABI.abi || STAKING_ABI as any, functionName: 'getExchangeRate' },
+      { address: (CONTRACT_ADDRESSES as any).STAKING_CONTRACT as `0x${string}`, abi: STAKING_ABI.abi || STAKING_ABI as any, functionName: 'totalSupply' },
     ],
     query: { enabled: activeTab === 'stake', refetchInterval: 5000 }
   });
@@ -228,7 +228,7 @@ export const SwapCard = ({
   // --- CRITICAL: FIND REAL FACTORY ---
   const { data: routerFactory } = useReadContract({
     address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`,
-    abi: ROUTER_ABI as any,
+    abi: ROUTER_ABI.abi || ROUTER_ABI as any,
     functionName: 'factory',
     query: { refetchInterval: 100000 }
   });
@@ -236,7 +236,7 @@ export const SwapCard = ({
 
   const { data: pairAddressRaw } = useReadContract({
     address: activeFactory as `0x${string}`,
-    abi: FACTORY_ABI as any,
+    abi: FACTORY_ABI.abi || FACTORY_ABI as any,
     functionName: 'getPool',
     args: tokenIn && tokenOut && activeTab !== 'stake' ? [tokenIn.addr, tokenOut.addr] : undefined,
     query: { enabled: !!tokenIn && !!tokenOut && activeTab !== 'stake' }
@@ -253,7 +253,7 @@ export const SwapCard = ({
 
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: tokenIn?.addr as `0x${string}`,
-    abi: ERC20_ABI as any,
+    abi: ERC20_ABI.abi || ERC20_ABI as any,
     functionName: 'allowance',
     args: address && tokenIn && spenderAddress ? [address, spenderAddress] : undefined,
     query: { enabled: !!tokenIn && !!address && !!spenderAddress }
@@ -324,10 +324,10 @@ export const SwapCard = ({
   // --- DYNAMIC RESERVES & QUOTES ---
   const { data: poolData } = useReadContracts({
     contracts: [
-      { address: pairAddress as `0x${string}`, abi: AMM_ABI as any, functionName: 'token0' },
-      { address: pairAddress as `0x${string}`, abi: AMM_ABI as any, functionName: 'reserve0' },
-      { address: pairAddress as `0x${string}`, abi: AMM_ABI as any, functionName: 'reserve1' },
-      { address: pairAddress as `0x${string}`, abi: AMM_ABI as any, functionName: 'getAmountOut', args: tokenIn && fromAmount && !isNaN(parseFloat(fromAmount)) ? [parseUnits(fromAmount, tokenIn.decimals), tokenIn.addr] : undefined },
+      { address: pairAddress as `0x${string}`, abi: AMM_ABI.abi || AMM_ABI as any, functionName: 'token0' },
+      { address: pairAddress as `0x${string}`, abi: AMM_ABI.abi || AMM_ABI as any, functionName: 'reserve0' },
+      { address: pairAddress as `0x${string}`, abi: AMM_ABI.abi || AMM_ABI as any, functionName: 'reserve1' },
+      { address: pairAddress as `0x${string}`, abi: AMM_ABI.abi || AMM_ABI as any, functionName: 'getAmountOut', args: tokenIn && fromAmount && !isNaN(parseFloat(fromAmount)) ? [parseUnits(fromAmount, tokenIn.decimals), tokenIn.addr] : undefined },
     ],
     query: { enabled: !!pairAddress && !!tokenIn && activeTab !== 'stake', refetchInterval: 3000 }
   });
@@ -444,7 +444,7 @@ export const SwapCard = ({
     if (!isConnected || !address || !tokenIn || !tokenOut) return;
     if (needsApproval && tokenIn && spenderAddress) {
       triggerIsland('processing', `Authorizing ${tokenIn.symbol}...`);
-      approveWrite({ address: tokenIn.addr as `0x${string}`, abi: ERC20_ABI as any, functionName: 'approve', args: [spenderAddress, maxUint256] });
+      approveWrite({ address: tokenIn.addr as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'approve', args: [spenderAddress, maxUint256] });
     } else {
       const actionType = activeTab === 'limit' ? 'Limit Order' : (activeTab === 'stake' ? (isUnstake ? 'Unstaked' : 'Staked') : 'Swap');
       const msg = activeTab === 'limit' ? 'Placing Limit Order...' : (activeTab === 'stake' ? (isUnstake ? 'Unstaking Assets...' : 'Staking Assets...') : 'Swapping Tokens...');
@@ -484,7 +484,7 @@ export const SwapCard = ({
       } else if (activeTab === 'stake') {
         actionWrite({
           address: (CONTRACT_ADDRESSES as any).STAKING_CONTRACT as `0x${string}`,
-          abi: STAKING_ABI as any,
+          abi: STAKING_ABI.abi || STAKING_ABI as any,
           functionName: isUnstake ? 'unstake' : 'stake',
           args: [parseUnits(fromAmount, tokenIn.decimals)]
         });
@@ -492,7 +492,7 @@ export const SwapCard = ({
         const minOutRaw = parseUnits(minReceived, tokenOut.decimals);
         actionWrite({
           address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`,
-          abi: ROUTER_ABI as any,
+          abi: ROUTER_ABI.abi || ROUTER_ABI as any,
           functionName: 'swapExactTokensForTokens',
           args: [parseUnits(fromAmount, tokenIn.decimals), minOutRaw, [tokenIn.addr, tokenOut.addr], address, BigInt(Math.floor(Date.now() / 1000) + 1200)]
         });
