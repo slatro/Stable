@@ -11,6 +11,7 @@ import { usePrices } from '../context/PriceContext';
 import { useNotifications } from '../context/NotificationContext';
 import { triggerIsland } from './TransactionIsland';
 import { useSound } from '../context/SoundContext';
+import Chart from 'react-apexcharts';
 
 const FormatSymbol = ({ symbol, className = "" }: { symbol: string | undefined, className?: string }) => {
   if (!symbol) return null;
@@ -582,6 +583,85 @@ export const PoolsPanel = () => {
           </div>
         </div>
       </div>
+
+      {/* ANALYTICS SECTION */}
+      <div className="col-span-12">
+        <PoolsAnalytics />
+      </div>
     </div>
   );
 };
+
+const PoolsAnalytics = () => {
+  const dates = Array.from({ length: 10 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (9 - i));
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  });
+
+  const tvlSeries = [{ name: 'TVL ($)', data: [450000, 520000, 610000, 580000, 720000, 890000, 950000, 1100000, 1180000, 1250000] }];
+  const volSeries = [{ name: 'Volume ($)', data: [25000, 48000, 92000, 31000, 110000, 145000, 89000, 175000, 160000, 210000] }];
+  const apySeries = [{ name: 'Staking APY (%)', data: [4.2, 4.5, 4.8, 4.6, 5.2, 5.9, 5.7, 6.4, 6.2, 6.8] }];
+
+  const baseOptions = {
+    chart: {
+      toolbar: { show: false },
+      sparkline: { enabled: false },
+      background: 'transparent',
+    },
+    colors: ['#3b82f6'],
+    stroke: { curve: 'smooth', width: 2 },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.35,
+        opacityTo: 0.05,
+        stops: [0, 90, 100]
+      }
+    },
+    xaxis: {
+      categories: dates,
+      labels: { style: { colors: 'rgba(255,255,255,0.2)', fontSize: '8px', fontFamily: 'sans-serif', fontWeight: 'bold' } },
+      axisBorder: { show: false },
+      axisTicks: { show: false }
+    },
+    yaxis: {
+      labels: { style: { colors: 'rgba(255,255,255,0.2)', fontSize: '8px', fontFamily: 'sans-serif', fontWeight: 'bold' } }
+    },
+    grid: { borderColor: 'rgba(255,255,255,0.03)', strokeDashArray: 3 },
+    tooltip: { theme: 'dark' }
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+      {/* TVL CHART */}
+      <div className="premium-card bg-white/[0.02] p-4 flex flex-col gap-2">
+        <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Protocol TVL</span>
+        <span className="text-xl font-black text-white tracking-tighter">$1,250,000</span>
+        <div className="h-[150px]">
+          <Chart options={{ ...baseOptions, colors: ['#06b6d4'] } as any} series={tvlSeries} type="area" height="100%" />
+        </div>
+      </div>
+
+      {/* VOLUME CHART */}
+      <div className="premium-card bg-white/[0.02] p-4 flex flex-col gap-2">
+        <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">24h Trading Volume</span>
+        <span className="text-xl font-black text-white tracking-tighter">$210,000</span>
+        <div className="h-[150px]">
+          <Chart options={{ ...baseOptions, fill: { opacity: 0.8 }, colors: ['#6366f1'] } as any} series={volSeries} type="bar" height="100%" />
+        </div>
+      </div>
+
+      {/* APY CHART */}
+      <div className="premium-card bg-white/[0.02] p-4 flex flex-col gap-2">
+        <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Average Staking APY</span>
+        <span className="text-xl font-black text-emerald-400 tracking-tighter">6.80% APY</span>
+        <div className="h-[150px]">
+          <Chart options={{ ...baseOptions, colors: ['#10b981'] } as any} series={apySeries} type="line" height="100%" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
