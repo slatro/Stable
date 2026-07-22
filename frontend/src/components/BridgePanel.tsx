@@ -1,10 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowDown, Check, ChevronDown, RefreshCw, AlertCircle, ArrowRightLeft, ExternalLink, Zap } from 'lucide-react';
-import { useAccount, useReadContract, useWriteContract, useSwitchChain, useChainId } from 'wagmi';
+import React, { useState, useMemo } from 'react';
+import { ArrowDown, Check, ChevronDown, RefreshCw, AlertCircle, ArrowRightLeft, ExternalLink, Loader2 } from 'lucide-react';
+import { useReadContract, useSwitchChain, useChainId } from 'wagmi';
+import { useAccount, useWriteContract } from '../hooks/web3';
 import { formatUnits, parseUnits } from 'viem';
 import { useNotifications } from '../context/NotificationContext';
 import { triggerIsland } from './TransactionIsland';
 import { useSound } from '../context/SoundContext';
+import { ARC_TESTNET_CONFIG } from '../config/contracts';
+
+// ─── CCTP V2 Contract ABIs ────────────────────────────────────────────────────
 
 const ERC20_ABI = [
   {
@@ -15,182 +19,295 @@ const ERC20_ABI = [
     outputs: [{ name: 'value', type: 'uint256' }]
   },
   {
-    name: 'transfer',
+    name: 'approve',
     type: 'function',
     stateMutability: 'nonpayable',
     inputs: [
-      { name: 'to', type: 'address' },
+      { name: 'spender', type: 'address' },
       { name: 'value', type: 'uint256' }
     ],
     outputs: [{ name: 'success', type: 'bool' }]
   }
 ] as const;
 
+const TOKEN_MESSENGER_ABI = [
+  {
+    name: 'depositForBurn',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'amount', type: 'uint256' },
+      { name: 'destinationDomain', type: 'uint32' },
+      { name: 'mintRecipient', type: 'bytes32' },
+      { name: 'burnToken', type: 'address' },
+      { name: 'destinationCaller', type: 'bytes32' },
+      { name: 'maxFee', type: 'uint256' },
+      { name: 'minFinalityThreshold', type: 'uint32' },
+    ],
+    outputs: [{ name: 'nonce', type: 'uint64' }]
+  }
+] as const;
+
+const MESSAGE_TRANSMITTER_ABI = [
+  {
+    name: 'receiveMessage',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'message', type: 'bytes' },
+      { name: 'attestation', type: 'bytes' }
+    ],
+    outputs: [{ name: 'success', type: 'bool' }]
+  }
+] as const;
+
+// ─── CCTP Contract Addresses ──────────────────────────────────────────────────
+
+const TOKEN_MESSENGER_V2 = '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA';
+const MESSAGE_TRANSMITTER_V2_ARC = '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275';
+const ARC_DOMAIN_ID = 26;
+
 const CHAINS = [
-  { 
-    id: 'base-sepolia', 
-    name: 'Base Sepolia', 
+  {
+    id: 'base-sepolia',
+    name: 'Base Sepolia',
     chainId: 84532,
+    domain: 6,
     usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
     logo: 'https://avatars.githubusercontent.com/u/108554348?s=200&v=4',
     explorer: 'https://sepolia.basescan.org/tx'
   },
-  { 
-    id: 'arbitrum-sepolia', 
-    name: 'Arbitrum Sepolia', 
+  {
+    id: 'arbitrum-sepolia',
+    name: 'Arbitrum Sepolia',
     chainId: 421614,
+    domain: 3,
     usdc: '0x75faf114eafb1BD239e7be45E73d696117D01309',
     logo: 'https://avatars.githubusercontent.com/u/84482479?s=200&v=4',
     explorer: 'https://sepolia.arbiscan.io/tx'
   },
-  { 
-    id: 'optimism-sepolia', 
-    name: 'Optimism Sepolia', 
+  {
+    id: 'optimism-sepolia',
+    name: 'Optimism Sepolia',
     chainId: 11155420,
+    domain: 2,
     usdc: '0x5fd84259d6f058f24560b3f07e86e21626196723',
     logo: 'https://avatars.githubusercontent.com/u/45147573?s=200&v=4',
     explorer: 'https://sepolia-optimism.etherscan.io/tx'
   },
-  { 
-    id: 'sepolia', 
-    name: 'Ethereum Sepolia', 
+  {
+    id: 'sepolia',
+    name: 'Ethereum Sepolia',
     chainId: 11155111,
+    domain: 0,
     usdc: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
     logo: 'https://avatars.githubusercontent.com/u/6250754?s=200&v=4',
     explorer: 'https://sepolia.etherscan.io/tx'
   },
 ];
 
-const BRIDGE_TREASURY = '0x1f9090aaE28b8a3dCeaDf281B0F12828e676c326';
+type BridgeStep = 'idle' | 'approve' | 'burn' | 'attestation' | 'mint' | 'success' | 'error';
+
+// ─── Attestation Polling ──────────────────────────────────────────────────────
+
+const pollAttestation = async (
+  sourceDomain: number,
+  txHash: string,
+  onUpdate: (msg: string) => void
+): Promise<{ message: string; attestation: string }> => {
+  const url = `https://iris-api-sandbox.circle.com/v2/messages/${sourceDomain}?transactionHash=${txHash}`;
+  let attempts = 0;
+  while (true) {
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      const msg = data?.messages?.[0];
+      if (msg && msg.attestation && msg.attestation !== 'PENDING') {
+        return { message: msg.message, attestation: msg.attestation };
+      }
+      attempts++;
+      onUpdate(`Waiting for Circle attestation... (${attempts * 5}s elapsed)`);
+    } catch (err) {
+      // Network error – keep retrying
+    }
+    await new Promise(r => setTimeout(r, 5000));
+  }
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export const BridgePanel = () => {
-  const { isConnected, address, isSocial } = useAccount();
+  const { isConnected, address } = useAccount();
   const currentChainId = useChainId();
   const { switchChain } = useSwitchChain();
   const { play } = useSound();
   const { notify } = useNotifications();
+  const { writeContractAsync } = useWriteContract();
 
   const [srcChain, setSrcChain] = useState(CHAINS[0]);
-  const [destChain] = useState({ id: 'arc', name: 'Arc Testnet', logo: '/stable_logos/usdc.png' });
   const [amount, setAmount] = useState('');
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [isBridging, setIsBridging] = useState(false);
-  const [bridgeStep, setBridgeStep] = useState<'idle' | 'approve' | 'burn' | 'attestation' | 'mint' | 'success'>('idle');
+  const [bridgeStep, setBridgeStep] = useState<BridgeStep>('idle');
   const [bridgeTxHash, setBridgeTxHash] = useState('');
+  const [attestationStatus, setAttestationStatus] = useState('');
 
-  // Fetch real USDC balance on selected source chain
   const { data: rawBalance, refetch: refetchBalance } = useReadContract({
     address: srcChain.usdc as `0x${string}`,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
     chainId: srcChain.chainId,
-    query: {
-      enabled: !!address,
-      refetchInterval: 5000
-    }
+    query: { enabled: !!address, refetchInterval: 5000 }
   });
 
   const formattedBalance = useMemo(() => {
     if (rawBalance === undefined) return '0.00';
-    return Number(formatUnits(rawBalance, 6)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return Number(formatUnits(rawBalance, 6)).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
   }, [rawBalance]);
 
-  const { writeContractAsync } = useWriteContract();
-
-  const isCorrectChain = isSocial || currentChainId === srcChain.chainId;
+  const isCorrectChain = currentChainId === srcChain.chainId;
 
   const handleBridge = async () => {
-    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) return;
-    
+    if (!address || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) return;
+
+    // 1. Switch to source chain if needed
     if (!isCorrectChain) {
       play('click');
-      try {
-        switchChain({ chainId: srcChain.chainId });
-      } catch (err) {
-        console.error("Failed to switch chain:", err);
-      }
+      try { await switchChain({ chainId: srcChain.chainId }); } catch {}
       return;
     }
 
     setIsBridging(true);
+    setBridgeTxHash('');
+    setAttestationStatus('');
     play('click');
-    triggerIsland('processing', 'Initiating Circle CCTP Transfer...');
+    triggerIsland('processing', 'Starting CCTP Bridge...');
 
     try {
-      setBridgeStep('approve');
       const parsedAmount = parseUnits(amount, 6);
+      // Pad address to bytes32 for mintRecipient
+      const mintRecipient = `0x000000000000000000000000${address.slice(2)}` as `0x${string}`;
 
-      // Perform real USDC Transfer/Burn representation on Source Sepolia chain!
-      const txHash = await writeContractAsync({
+      // ── STEP 1: APPROVE ─────────────────────────────────────────────────────
+      setBridgeStep('approve');
+      triggerIsland('processing', 'Approving USDC to Circle TokenMessenger...');
+
+      await writeContractAsync({
         address: srcChain.usdc as `0x${string}`,
         abi: ERC20_ABI,
-        functionName: 'transfer',
-        args: [BRIDGE_TREASURY, parsedAmount],
+        functionName: 'approve',
+        args: [TOKEN_MESSENGER_V2, parsedAmount],
+        chainId: srcChain.chainId,
       });
 
+      // ── STEP 2: DEPOSIT FOR BURN ─────────────────────────────────────────────
       setBridgeStep('burn');
-      triggerIsland('processing', `USDC Burn confirmed. Fetching CCTP Attestation...`);
+      triggerIsland('processing', 'Burning USDC via CCTP...');
 
-      setTimeout(() => {
-        setBridgeStep('attestation');
-        triggerIsland('processing', 'Waiting for Circle Attestation signatures...');
-        
-        setTimeout(() => {
-          setBridgeStep('mint');
-          triggerIsland('processing', 'Minting Stablr Dollar / USDC on Arc...');
-          
-          setTimeout(() => {
-            setBridgeStep('success');
-            setBridgeTxHash(txHash);
-            setIsBridging(false);
-            refetchBalance();
-            
-            triggerIsland('success', 'USDC Bridged Successfully!');
-            notify({
-              type: 'success',
-              title: 'Bridge Completed',
-              message: `Successfully bridged ${amount} USDC to Arc Testnet!`,
-              link: `${srcChain.explorer}/${txHash}`
-            });
-          }, 2000);
-        }, 2500);
-      }, 2000);
+      const burnTxHash = await writeContractAsync({
+        address: TOKEN_MESSENGER_V2 as `0x${string}`,
+        abi: TOKEN_MESSENGER_ABI,
+        functionName: 'depositForBurn',
+        args: [
+          parsedAmount,
+          ARC_DOMAIN_ID,         // destination: Arc Testnet domain 26
+          mintRecipient,          // bytes32 recipient
+          srcChain.usdc as `0x${string}`,  // burnToken
+          '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`, // any caller
+          BigInt(0),              // maxFee (0 = no hook fee)
+          500,                    // minFinalityThreshold (fast finality)
+        ],
+        chainId: srcChain.chainId,
+      });
 
-    } catch (err) {
-      console.error(err);
+      setBridgeTxHash(burnTxHash);
+      triggerIsland('processing', 'Burn confirmed. Waiting for Circle attestation...');
+
+      // ── STEP 3: POLL CIRCLE ATTESTATION API ────────────────────────────────
+      setBridgeStep('attestation');
+      const { message, attestation } = await pollAttestation(
+        srcChain.domain,
+        burnTxHash,
+        (msg) => {
+          setAttestationStatus(msg);
+          triggerIsland('processing', msg);
+        }
+      );
+
+      // ── STEP 4: SWITCH TO ARC & RECEIVE MESSAGE ────────────────────────────
+      setBridgeStep('mint');
+      triggerIsland('processing', 'Switching to Arc Testnet to mint USDC...');
+
+      await switchChain({ chainId: ARC_TESTNET_CONFIG.chainId });
+
+      triggerIsland('processing', 'Minting native USDC on Arc Testnet...');
+
+      await writeContractAsync({
+        address: MESSAGE_TRANSMITTER_V2_ARC as `0x${string}`,
+        abi: MESSAGE_TRANSMITTER_ABI,
+        functionName: 'receiveMessage',
+        args: [message as `0x${string}`, attestation as `0x${string}`],
+        chainId: ARC_TESTNET_CONFIG.chainId,
+      });
+
+      // ── SUCCESS ─────────────────────────────────────────────────────────────
+      setBridgeStep('success');
       setIsBridging(false);
-      setBridgeStep('idle');
-      triggerIsland('error', 'Bridge Transaction Rejected');
+      refetchBalance();
+      triggerIsland('success', `${amount} USDC bridged to Arc Testnet!`);
+      notify({
+        type: 'success',
+        title: 'CCTP Bridge Complete',
+        message: `${amount} native USDC minted on Arc Testnet!`,
+        link: `${srcChain.explorer}/${burnTxHash}`
+      });
+
+    } catch (err: any) {
+      console.error('CCTP bridge error:', err);
+      setIsBridging(false);
+      setBridgeStep('error');
+      triggerIsland('error', err?.shortMessage || 'Bridge transaction failed');
     }
   };
+
+  const stepLabels: { key: BridgeStep; label: string }[] = [
+    { key: 'approve', label: '1. Approve USDC to TokenMessenger' },
+    { key: 'burn',    label: '2. depositForBurn on Source Chain' },
+    { key: 'attestation', label: '3. Circle Attestation Signature' },
+    { key: 'mint',    label: '4. receiveMessage → Mint on Arc' },
+  ];
+
+  const stepOrder = ['approve', 'burn', 'attestation', 'mint', 'success'];
+  const currentIdx = stepOrder.indexOf(bridgeStep);
 
   const isButtonDisabled = !isConnected || !amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0 || isBridging;
 
   return (
     <div className="w-full max-w-lg mx-auto flex flex-col gap-6 animate-in slide-in-from-bottom-8 duration-700 py-6">
-      
+
       <div className="flex flex-col gap-1.5 text-center md:text-left">
         <h2 className="text-3xl font-black text-white tracking-tighter uppercase flex items-center justify-center md:justify-start gap-2">
           <ArrowRightLeft className="text-blue-500 animate-pulse" size={24} /> USDC Bridge
         </h2>
         <span className="text-[8px] md:text-[9.5px] font-black text-white/20 uppercase tracking-[0.15em] whitespace-nowrap block text-center md:text-left">
-          Powered by Circle Cross-Chain Transfer Protocol (CCTP)
+          Powered by Circle CCTP V2 — Real on-chain burn &amp; mint
         </span>
       </div>
 
       <div className="premium-card p-6 bg-white/[0.01] border border-white/5 relative overflow-hidden flex flex-col gap-6">
-        
-        {/* Decorative subtle blue background blur */}
         <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none" />
 
         <div className="flex flex-col gap-4">
-          
+
           {/* FROM NETWORK SELECTOR */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-2">
             <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Source Chain</span>
             <div className="flex justify-between items-center relative w-full">
-              
+
               <div className="relative">
                 <button
                   onClick={() => setIsSelectOpen(!isSelectOpen)}
@@ -228,9 +345,9 @@ export const BridgePanel = () => {
                   Balance: {isConnected ? `${formattedBalance} USDC` : '0.00 USDC'}
                 </span>
                 {isConnected && (
-                  <a 
-                    href="https://faucet.circle.com/" 
-                    target="_blank" 
+                  <a
+                    href="https://faucet.circle.com/"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[8px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest transition-colors flex items-center gap-1"
                   >
@@ -241,32 +358,32 @@ export const BridgePanel = () => {
             </div>
           </div>
 
-          {/* INTERACTIVE CONNECTOR ICON */}
+          {/* ARROW */}
           <div className="flex justify-center -my-2 z-10">
             <div className="p-2 bg-[#0d0d0d] border border-white/10 rounded-2xl text-blue-500 shadow-xl shadow-blue-500/5">
               <ArrowDown size={14} className="animate-bounce" />
             </div>
           </div>
 
-          {/* TO NETWORK (FIXED TO ARC) */}
+          {/* TO NETWORK (ARC) */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-2">
             <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Destination Chain</span>
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3 bg-white/5 px-3 py-2 rounded-xl border border-white/5">
                 <div className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                  <img src={destChain.logo} className="w-3.5 h-3.5 object-contain" alt="" />
+                  <img src="/stable_logos/usdc.png" className="w-3.5 h-3.5 object-contain" alt="" />
                 </div>
-                <span className="text-xs font-black text-white uppercase tracking-wider">{destChain.name}</span>
+                <span className="text-xs font-black text-white uppercase tracking-wider">Arc Testnet</span>
               </div>
-              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">⚡ Gasless Mint</span>
+              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">⚡ Native USDC</span>
             </div>
           </div>
 
           {/* AMOUNT INPUT */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-2">
             <div className="flex justify-between items-center">
-              <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Amount to Bridge</span>
-              <button 
+              <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Amount</span>
+              <button
                 onClick={() => setAmount(formattedBalance.replace(/,/g, ''))}
                 disabled={isBridging}
                 className="text-[9px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest transition-colors"
@@ -289,39 +406,54 @@ export const BridgePanel = () => {
 
         </div>
 
-        {/* BRIDGING STATUS/STEPS INDICATOR */}
-        {isBridging && (
+        {/* BRIDGE PROGRESS */}
+        {(isBridging || bridgeStep === 'success' || bridgeStep === 'error') && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-3">
             <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Bridge Progress</span>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-[10px] font-bold">
-                <span className={bridgeStep === 'approve' ? 'text-blue-400 font-black' : 'text-white/40'}>1. Initiating Burn Transaction</span>
-                {bridgeStep !== 'approve' && <Check size={10} className="text-emerald-400" />}
-              </div>
-              <div className="flex items-center justify-between text-[10px] font-bold">
-                <span className={bridgeStep === 'burn' ? 'text-blue-400 font-black animate-pulse' : (bridgeStep === 'approve' ? 'text-white/20' : 'text-white/40')}>2. Confirming Burn on Source Sepolia</span>
-                {['attestation', 'mint', 'success'].includes(bridgeStep) && <Check size={10} className="text-emerald-400" />}
-              </div>
-              <div className="flex items-center justify-between text-[10px] font-bold">
-                <span className={bridgeStep === 'attestation' ? 'text-blue-400 font-black animate-pulse' : (['approve', 'burn'].includes(bridgeStep) ? 'text-white/20' : 'text-white/40')}>3. Fetch Circle Attestation</span>
-                {['mint', 'success'].includes(bridgeStep) && <Check size={10} className="text-emerald-400" />}
-              </div>
-              <div className="flex items-center justify-between text-[10px] font-bold">
-                <span className={bridgeStep === 'mint' ? 'text-blue-400 font-black animate-pulse' : (bridgeStep === 'success' ? 'text-white/40' : 'text-white/20')}>4. Mint Stablr USD on Arc Testnet</span>
-                {bridgeStep === 'success' && <Check size={10} className="text-emerald-400" />}
-              </div>
+            <div className="flex flex-col gap-2.5">
+              {stepLabels.map(({ key, label }, idx) => {
+                const stepIdx = stepOrder.indexOf(key);
+                const isDone = currentIdx > stepIdx;
+                const isActive = bridgeStep === key;
+                const isPending = currentIdx < stepIdx;
+                return (
+                  <div key={key} className="flex items-center justify-between">
+                    <span className={`text-[10px] font-bold transition-colors ${
+                      isActive ? 'text-blue-400 font-black' :
+                      isDone ? 'text-white/50' :
+                      'text-white/20'
+                    }`}>
+                      {isActive && <Loader2 size={9} className="inline animate-spin mr-1.5" />}
+                      {label}
+                      {isActive && key === 'attestation' && attestationStatus && (
+                        <span className="ml-1 text-white/30">– {attestationStatus}</span>
+                      )}
+                    </span>
+                    {isDone && <Check size={10} className="text-emerald-400 shrink-0" />}
+                  </div>
+                );
+              })}
             </div>
+            {bridgeStep === 'error' && (
+              <p className="text-[9px] font-black text-red-400 uppercase tracking-widest mt-1">
+                ✕ Transaction failed or rejected
+              </p>
+            )}
           </div>
         )}
 
-        {/* MAIN BRIDGE ACTION BUTTON */}
+        {/* ACTION BUTTON */}
         {!isConnected ? (
           <button disabled className="w-full py-5 rounded-2xl bg-white/5 text-white/20 font-black text-xs uppercase tracking-[0.4em] cursor-not-allowed">
             Connect Wallet
           </button>
         ) : isBridging ? (
           <button disabled className="w-full py-5 rounded-2xl bg-blue-500/10 text-blue-400 font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-2 cursor-wait">
-            <RefreshCw className="animate-spin" size={14} /> Bridging USDC
+            <RefreshCw className="animate-spin" size={14} />
+            {bridgeStep === 'attestation' ? 'Waiting for Attestation...' :
+             bridgeStep === 'mint' ? 'Minting on Arc...' :
+             bridgeStep === 'burn' ? 'Burning USDC...' :
+             'Approving...'}
           </button>
         ) : !isCorrectChain ? (
           <button
@@ -335,35 +467,37 @@ export const BridgePanel = () => {
             onClick={handleBridge}
             disabled={isButtonDisabled}
             className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-2 shadow-2xl ${
-              isButtonDisabled 
-                ? 'bg-white/5 text-white/20 cursor-not-allowed' 
+              isButtonDisabled
+                ? 'bg-white/5 text-white/20 cursor-not-allowed'
                 : 'bg-white text-black hover:scale-[1.01] active:scale-95 shadow-white/5'
             }`}
           >
-            Bridge USDC
+            Bridge USDC via CCTP
           </button>
         )}
 
-        {/* EXPLORER LINK */}
-        {bridgeStep === 'success' && bridgeTxHash && (
+        {/* BURN TX LINK */}
+        {bridgeTxHash && (
           <a
             href={`${srcChain.explorer}/${bridgeTxHash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 text-[9px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest transition-colors"
           >
-            View Mint Tx on Explorer <ExternalLink size={12} />
+            View Burn Tx on {srcChain.name} Explorer <ExternalLink size={12} />
           </a>
         )}
 
         {/* DISCLOSURE */}
         <div className="flex items-start gap-2 text-[10px] font-bold text-white/20 uppercase tracking-wide leading-relaxed p-1">
           <AlertCircle size={14} className="shrink-0 text-white/20 mt-0.5" />
-          <span>USDC transfers typically settle in 2-3 minutes. This operation uses Circle's main testnet relays to burn and mint native USDC.</span>
+          <span>
+            Real CCTP V2 bridge: USDC is burned on source chain, attested by Circle, and native USDC is minted on Arc Testnet.
+            Attestation typically takes 2–5 minutes.
+          </span>
         </div>
 
       </div>
-
     </div>
   );
 };
