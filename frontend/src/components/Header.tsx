@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Menu, ShieldCheck, Wallet, Loader2, Zap, ExternalLink, CheckCircle2, Droplets, ShieldAlert, X } from 'lucide-react';
-import { useReadContract, useBalance, useWaitForTransactionReceipt, useConnect } from 'wagmi';
-import { useAccount, useWriteContract } from '../hooks/web3';
+import { useReadContract, useBalance, useWaitForTransactionReceipt, useConnect, useWriteContract } from 'wagmi';
+import { useAccount } from '../hooks/web3';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { formatUnits } from 'viem';
 import { Logo } from './Logo';
 import { ProfileModal, AVATARS } from './ProfileModal';
-import { CONTRACT_ADDRESSES, TOKENS } from '../config/contracts';
+import { CONTRACT_ADDRESSES, TOKENS, ARC_TESTNET_CONFIG } from '../config/contracts';
 import { triggerIsland } from './TransactionIsland';
 import { useSound } from '../context/SoundContext';
 import ERC20_ABI from '../abis/ERC20.json';
@@ -39,6 +39,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
     abi: ERC20_ABI.abi || ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
+    chainId: ARC_TESTNET_CONFIG.chainId,
     query: { enabled: !!address, refetchInterval: 5000 }
   });
 
@@ -46,6 +47,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
     address: CONTRACT_ADDRESSES.USDC_NATIVE as `0x${string}`,
     abi: ERC20_ABI.abi || ERC20_ABI,
     functionName: 'decimals',
+    chainId: ARC_TESTNET_CONFIG.chainId,
   });
 
   const formattedNative = rawUsdcBalance !== undefined ? parseFloat(formatUnits(rawUsdcBalance as bigint, (usdcDecimals as number) || 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
@@ -82,6 +84,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
     abi: POINTS_ABI.abi || POINTS_ABI,
     functionName: 'getNextCheckInTime',
     args: address ? [address] : undefined,
+    chainId: ARC_TESTNET_CONFIG.chainId,
     query: { enabled: !!address, refetchInterval: 10000 }
   });
 
@@ -182,7 +185,8 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
                         address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
                         abi: POINTS_ABI.abi || POINTS_ABI,
                         functionName: 'checkIn',
-                        args: [ref as `0x${string}`]
+                        args: [ref as `0x${string}`],
+                        chainId: ARC_TESTNET_CONFIG.chainId,
                       });
                       triggerIsland('processing', 'Authenticating Check-in...');
                     }}
@@ -221,6 +225,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
                         address: CONTRACT_ADDRESSES.MULTI_FAUCET as `0x${string}`,
                         abi: FAUCET_ABI.abi || FAUCET_ABI,
                         functionName: 'claim',
+                        chainId: ARC_TESTNET_CONFIG.chainId,
                       });
                       triggerIsland('processing', 'Minting Stablr Assets...');
                     }}
