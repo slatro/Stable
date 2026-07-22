@@ -32,7 +32,7 @@ const TokenInputSection = ({
 }: any) => {
   const { data: balance, refetch: refetchBalance } = useReadContract({
     address: (selectedToken?.addr || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    abi: ERC20_ABI.abi || ERC20_ABI as any,
+    abi: ERC20_ABI as any,
     functionName: 'balanceOf',
     args: address && selectedToken?.addr ? [address] : undefined,
     query: { enabled: !!address && !!selectedToken?.addr, refetchInterval: 5000 }
@@ -40,7 +40,7 @@ const TokenInputSection = ({
 
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: (selectedToken?.addr || '0x0000000000000000000000000000000000000000') as `0x${string}`,
-    abi: ERC20_ABI.abi || ERC20_ABI as any,
+    abi: ERC20_ABI as any,
     functionName: 'allowance',
     args: address && selectedToken?.addr ? [address, CONTRACT_ADDRESSES.ROUTER] : undefined,
     query: { enabled: !!address && !!selectedToken?.addr, refetchInterval: 5000 }
@@ -145,7 +145,7 @@ export const PoolsPanel = () => {
   // --- CRITICAL: FIND REAL FACTORY FROM ROUTER ---
   const { data: routerFactory } = useReadContract({
     address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`,
-    abi: ROUTER_ABI.abi || ROUTER_ABI as any,
+    abi: ROUTER_ABI as any,
     functionName: 'factory',
     query: { refetchInterval: 100000 }
   });
@@ -171,7 +171,7 @@ export const PoolsPanel = () => {
   // --- Global Scan ---
   const { data: poolsLength, refetch: refetchPoolsLength } = useReadContract({
     address: activeFactory as `0x${string}`,
-    abi: FACTORY_ABI.abi || FACTORY_ABI as any,
+    abi: FACTORY_ABI as any,
     functionName: 'allPoolsLength',
     query: { refetchInterval: 10000 }
   });
@@ -180,7 +180,7 @@ export const PoolsPanel = () => {
     const length = Number(poolsLength || 0);
     return Array.from({ length }, (_, i) => ({
       address: activeFactory as `0x${string}`,
-      abi: FACTORY_ABI.abi || FACTORY_ABI as any,
+      abi: FACTORY_ABI as any,
       functionName: 'allPools',
       args: [BigInt(i)]
     }));
@@ -318,8 +318,8 @@ export const PoolsPanel = () => {
   const poolLookupContracts = useMemo(() => {
     if (!tokenA || !tokenB || !activeFactory) return [];
     return [
-      { address: activeFactory as `0x${string}`, abi: FACTORY_ABI.abi || FACTORY_ABI as any, functionName: 'getPool', args: [tokenA.addr, tokenB.addr] },
-      { address: activeFactory as `0x${string}`, abi: FACTORY_ABI.abi || FACTORY_ABI as any, functionName: 'getPool', args: [tokenB.addr, tokenA.addr] }
+      { address: activeFactory as `0x${string}`, abi: FACTORY_ABI as any, functionName: 'getPool', args: [tokenA.addr, tokenB.addr] },
+      { address: activeFactory as `0x${string}`, abi: FACTORY_ABI as any, functionName: 'getPool', args: [tokenB.addr, tokenA.addr] }
     ];
   }, [tokenA, tokenB, activeFactory]);
 
@@ -429,7 +429,7 @@ export const PoolsPanel = () => {
     try {
       const tid = notify({ type: 'loading', title: 'Awaiting Approval', message: `Please confirm approval for ${token.symbol} in your wallet.` });
       setActiveTid(tid);
-      writeAction({ address: token.addr as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'approve', args: [CONTRACT_ADDRESSES.ROUTER, maxUint256] }, { onSuccess: (h) => setLastApprovalHash(h), onError: (err) => { dismiss(tid); notify({ type: 'error', title: 'Approval Failed', message: err.message || 'Transaction rejected.' }); } });
+      writeAction({ address: token.addr as `0x${string}`, abi: ERC20_ABI as any, functionName: 'approve', args: [CONTRACT_ADDRESSES.ROUTER, maxUint256] }, { onSuccess: (h) => setLastApprovalHash(h), onError: (err) => { dismiss(tid); notify({ type: 'error', title: 'Approval Failed', message: err.message || 'Transaction rejected.' }); } });
     } catch (e: any) { notify({ type: 'error', title: 'Error', message: 'Failed to initiate approval.' }); }
   };
 
@@ -441,7 +441,7 @@ export const PoolsPanel = () => {
       const parsedB = parseUnits(amountB, tokenB.decimals);
       const tid = notify({ type: 'loading', title: 'Adding Liquidity', message: `Adding ${tokenA.symbol} and ${tokenB.symbol} to the pool.` });
       setActiveTid(tid);
-      writeAction({ address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`, abi: ROUTER_ABI.abi || ROUTER_ABI as any, functionName: 'addLiquidity', args: [tokenA.addr, tokenB.addr, parsedA, parsedB, address] }, { onError: (err) => { dismiss(tid); notify({ type: 'error', title: 'Transaction Failed', message: err.message || 'Failed to add liquidity.' }); } });
+      writeAction({ address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`, abi: ROUTER_ABI as any, functionName: 'addLiquidity', args: [tokenA.addr, tokenB.addr, parsedA, parsedB, address] }, { onError: (err) => { dismiss(tid); notify({ type: 'error', title: 'Transaction Failed', message: err.message || 'Failed to add liquidity.' }); } });
     } catch (e: any) { notify({ type: 'error', title: 'Error', message: 'Invalid input.' }); }
   };
 
@@ -453,7 +453,7 @@ export const PoolsPanel = () => {
       if (liquidityToRemove <= 0n) return;
       const tid = notify({ type: 'loading', title: 'Removing Liquidity', message: `Removing ${removePercent}% of your position.` });
       setActiveTid(tid);
-      writeAction({ address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`, abi: ROUTER_ABI.abi || ROUTER_ABI as any, functionName: 'removeLiquidity', args: [tokenA.addr, tokenB.addr, liquidityToRemove, address] }, { onError: (err) => { dismiss(tid); notify({ type: 'error', title: 'Transaction Failed', message: err.message || 'Failed to remove liquidity.' }); } });
+      writeAction({ address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`, abi: ROUTER_ABI as any, functionName: 'removeLiquidity', args: [tokenA.addr, tokenB.addr, liquidityToRemove, address] }, { onError: (err) => { dismiss(tid); notify({ type: 'error', title: 'Transaction Failed', message: err.message || 'Failed to remove liquidity.' }); } });
     } catch (e) { notify({ type: 'error', title: 'Error', message: 'Failed to remove liquidity.' }); }
   };
 

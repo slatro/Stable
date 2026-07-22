@@ -223,7 +223,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
   // --- ROBUST POOL DISCOVERY ---
   const { data: routerFactory } = useReadContract({
     address: CONTRACT_ADDRESSES.ROUTER as `0x${string}`,
-    abi: ROUTER_ABI.abi || ROUTER_ABI as any,
+    abi: ROUTER_ABI as any,
     functionName: 'factory',
     query: { refetchInterval: 100000 }
   });
@@ -231,7 +231,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
 
   const { data: poolsLength } = useReadContract({
     address: activeFactory as `0x${string}`,
-    abi: FACTORY_ABI.abi || FACTORY_ABI as any,
+    abi: FACTORY_ABI as any,
     functionName: 'allPoolsLength',
     query: { enabled: !!activeFactory, refetchInterval: 10000 }
   });
@@ -240,7 +240,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
     const length = Number(poolsLength || 0);
     return Array.from({ length }, (_, i) => ({
       address: activeFactory as `0x${string}`,
-      abi: FACTORY_ABI.abi || FACTORY_ABI as any,
+      abi: FACTORY_ABI as any,
       functionName: 'allPools',
       args: [BigInt(i)]
     }));
@@ -344,9 +344,9 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
   // Referral Data
   const { data: refData } = useReadContracts({
     contracts: [
-      { address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`, abi: POINTS_ABI.abi || POINTS_ABI, functionName: 'referralCount', args: address ? [address] : undefined },
-      { address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`, abi: POINTS_ABI.abi || POINTS_ABI, functionName: 'referralPoints', args: address ? [address] : undefined },
-      { address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`, abi: POINTS_ABI.abi || POINTS_ABI, functionName: 'referrers', args: address ? [address] : undefined },
+      { address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`, abi: POINTS_ABI as any, functionName: 'referralCount', args: address ? [address] : undefined },
+      { address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`, abi: POINTS_ABI as any, functionName: 'referralPoints', args: address ? [address] : undefined },
+      { address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`, abi: POINTS_ABI as any, functionName: 'referrers', args: address ? [address] : undefined },
     ],
     query: { enabled: !!address, refetchInterval: 30000 }
   });
@@ -368,7 +368,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
   const handleBindReferrer = (ref: string) => {
     bindWrite({
       address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
-      abi: POINTS_ABI.abi || POINTS_ABI,
+      abi: POINTS_ABI as any,
       functionName: 'setReferrer',
       args: [ref as `0x${string}`]
     });
@@ -447,7 +447,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
     const ref = localStorage.getItem('arc_pending_ref') || '0x0000000000000000000000000000000000000000';
     checkInWrite({
       address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
-      abi: POINTS_ABI.abi || POINTS_ABI,
+      abi: POINTS_ABI as any,
       functionName: 'checkIn',
       args: [ref as `0x${string}`]
     });
@@ -457,7 +457,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
     if (pendingPoints <= 0) return;
     settlePointsOnChain({
       address: CONTRACT_ADDRESSES.ARC_POINTS as `0x${string}`,
-      abi: POINTS_ABI.abi || POINTS_ABI,
+      abi: POINTS_ABI as any,
       functionName: 'recordActivity',
       args: [address as `0x${string}`, BigInt(pendingPoints), 'Daily Activity']
     });
