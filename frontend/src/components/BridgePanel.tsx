@@ -314,9 +314,7 @@ export const BridgePanel = () => {
                   disabled={isBridging}
                   className="flex items-center gap-3 bg-white/5 px-3 py-2 rounded-xl border border-white/10 hover:bg-white/10 transition-all group"
                 >
-                  <div className="w-6 h-6 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={srcChain.logo} className="w-3.5 h-3.5 object-contain" alt="" />
-                  </div>
+                  <img src={srcChain.logo} className="w-5 h-5 object-contain shrink-0" alt="" />
                   <span className="text-xs font-black text-white uppercase tracking-wider">{srcChain.name}</span>
                   <ChevronDown size={14} className="text-white/30 group-hover:text-white transition-colors" />
                 </button>
@@ -329,9 +327,7 @@ export const BridgePanel = () => {
                         onClick={() => { setSrcChain(c); setIsSelectOpen(false); }}
                         className="w-full py-2 px-3 flex items-center gap-3 hover:bg-white/5 rounded-xl transition-all"
                       >
-                        <div className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                          <img src={c.logo} className="w-4 h-4 object-contain" alt="" />
-                        </div>
+                        <img src={c.logo} className="w-5 h-5 object-contain shrink-0" alt="" />
                         <span className="text-[10px] font-black text-white uppercase tracking-wider whitespace-nowrap">{c.name}</span>
                         {srcChain.id === c.id && <Check size={10} className="text-blue-400 ml-auto shrink-0" />}
                       </button>
