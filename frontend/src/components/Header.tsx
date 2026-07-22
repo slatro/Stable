@@ -123,17 +123,8 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
         <div className="w-full px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-2 md:gap-4 py-2 md:py-0 min-h-[80px] md:min-h-[76px]">
           {/* TOP ROW: LOGO & WALLET ON MOBILE */}
           <div className="flex items-center justify-between w-full md:w-auto gap-4">
-            <div className="relative flex flex-col py-1">
-              <Logo />
-              <div className="absolute bottom-1.5 left-[104px] flex flex-col items-center whitespace-nowrap">
-                <span 
-                  className="text-[9.5px] md:text-[10.5px] font-black text-blue-400 tracking-[0.25em] pb-0.5"
-                  style={{ textShadow: '0 0 6px rgba(96, 165, 250, 0.6)' }}
-                >
-                  Live on Arc
-                </span>
-                <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-blue-400/40 to-transparent" />
-              </div>
+            <div className="flex flex-col py-1">
+              <Logo showSubtitle />
             </div>
             
             <div className="md:hidden flex items-center gap-2">
