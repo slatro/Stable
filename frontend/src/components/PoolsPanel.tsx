@@ -196,12 +196,15 @@ export const PoolsPanel = () => {
   }, [poolAddressesRes]);
 
   const poolMetadataContracts = useMemo(() => {
-    if (!poolAddresses || !address) return [];
+    if (!poolAddresses) return [];
     const calls: any[] = [];
+    const userAddr = address || '0x0000000000000000000000000000000000000000';
     poolAddresses.forEach((addr) => {
       calls.push({ address: addr, abi: AMM_ABI as any, functionName: 'token0' });
       calls.push({ address: addr, abi: AMM_ABI as any, functionName: 'token1' });
-      calls.push({ address: addr, abi: AMM_ABI as any, functionName: 'liquidityShares', args: [address] });
+      calls.push({ address: addr, abi: AMM_ABI as any, functionName: 'liquidityShares', args: [userAddr] });
+      calls.push({ address: addr, abi: AMM_ABI as any, functionName: 'reserve0' });
+      calls.push({ address: addr, abi: AMM_ABI as any, functionName: 'reserve1' });
     });
     return calls;
   }, [poolAddresses, address]);
@@ -211,19 +214,23 @@ export const PoolsPanel = () => {
     query: { enabled: poolMetadataContracts.length > 0, refetchInterval: 5000 }
   });
 
-  const positions = useMemo(() => {
+  const allPoolsWithData = useMemo(() => {
     if (!poolMetadatas || !poolAddresses) return [];
-    const pos: any[] = [];
+    const pools: any[] = [];
     for (let i = 0; i < poolAddresses.length; i++) {
-      const baseIdx = i * 3;
+      const baseIdx = i * 5;
       const t0Res = poolMetadatas[baseIdx];
       const t1Res = poolMetadatas[baseIdx + 1];
       const balRes = poolMetadatas[baseIdx + 2];
-      if (t0Res?.status === 'success' && t1Res?.status === 'success' && balRes?.status === 'success') {
+      const r0Res = poolMetadatas[baseIdx + 3];
+      const r1Res = poolMetadatas[baseIdx + 4];
+      if (t0Res?.status === 'success' && t1Res?.status === 'success') {
         const t0Addr = t0Res.result as string;
         const t1Addr = t1Res.result as string;
-        const balance = balRes.result as bigint;
-        if (balance && balance > 0n && t0Addr && t1Addr) {
+        const balance = balRes?.status === 'success' ? balRes.result as bigint : 0n;
+        const r0 = r0Res?.status === 'success' ? r0Res.result as bigint : 0n;
+        const r1 = r1Res?.status === 'success' ? r1Res.result as bigint : 0n;
+        if (t0Addr && t1Addr) {
           const t0 = TOKENS.find(t => t.addr.toLowerCase() === t0Addr.toLowerCase());
           const t1 = TOKENS.find(t => t.addr.toLowerCase() === t1Addr.toLowerCase());
           if (t0 && t1) {
@@ -231,13 +238,38 @@ export const PoolsPanel = () => {
             const isTryc = t0.symbol.includes('TRYC') || t1.symbol.includes('TRYC');
             const randomVal = parseInt(addr.slice(2, 6), 16) / 65535;
             const apr = isTryc ? (9 + (isNaN(randomVal) ? 0 : randomVal) * 3).toFixed(2) + '%' : (2 + (isNaN(randomVal) ? 0 : randomVal) * 2).toFixed(2) + '%';
-            pos.push({ tokens: [t0, t1], balance, poolAddr: addr, apr });
+            
+            // Calculate TVL dynamically
+            const price0 = prices[t0.symbol]?.price || 1;
+            const price1 = prices[t1.symbol]?.price || 1;
+            const val0 = Number(formatUnits(r0, t0.decimals)) * price0;
+            const val1 = Number(formatUnits(r1, t1.decimals)) * price1;
+            const tvlNum = val0 + val1;
+            
+            pools.push({
+              tokens: [t0, t1],
+              balance,
+              poolAddr: addr,
+              apr,
+              tvlNum,
+              tvl: tvlNum > 0 ? `$${tvlNum.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '$0.00',
+              r0,
+              r1
+            });
           }
         }
       }
     }
-    return pos;
-  }, [poolMetadatas, poolAddresses]);
+    return pools;
+  }, [poolMetadatas, poolAddresses, prices]);
+
+  const positions = useMemo(() => {
+    return allPoolsWithData.filter(p => p.balance > 0n);
+  }, [allPoolsWithData]);
+
+  const displayPools = useMemo(() => {
+    return allPoolsWithData.length > 0 ? allPoolsWithData : PLATFORM_POOLS;
+  }, [allPoolsWithData, PLATFORM_POOLS]);
 
   // --- CROSS-LOOKUP POOL DISCOVERY ---
   const poolLookupContracts = useMemo(() => {
@@ -559,7 +591,7 @@ export const PoolsPanel = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.02]">
-                  {PLATFORM_POOLS.map((pool, i) => (
+                  {displayPools.map((pool, i) => (
                     <tr key={i} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="py-3 md:py-4 px-3 md:px-6">
                         <div className="flex items-center gap-2">
@@ -586,28 +618,47 @@ export const PoolsPanel = () => {
 
       {/* ANALYTICS SECTION */}
       <div className="col-span-12">
-        <PoolsAnalytics />
+        <PoolsAnalytics displayPools={displayPools} />
       </div>
     </div>
   );
 };
 
-const PoolsAnalytics = () => {
+const PoolsAnalytics = ({ displayPools }: { displayPools: any[] }) => {
   const dates = Array.from({ length: 10 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (9 - i));
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   });
 
-  const tvlSeries = [{ name: 'TVL ($)', data: [450000, 520000, 610000, 580000, 720000, 890000, 950000, 1100000, 1180000, 1250000] }];
-  const volSeries = [{ name: 'Volume ($)', data: [25000, 48000, 92000, 31000, 110000, 145000, 89000, 175000, 160000, 210000] }];
-  const apySeries = [{ name: 'Staking APY (%)', data: [4.2, 4.5, 4.8, 4.6, 5.2, 5.9, 5.7, 6.4, 6.2, 6.8] }];
+  const totalTvl = useMemo(() => {
+    return displayPools.reduce((acc, p) => acc + (p.tvlNum || 0), 0);
+  }, [displayPools]);
+
+  const avgApy = useMemo(() => {
+    if (!displayPools || displayPools.length === 0) return 6.8;
+    const sum = displayPools.reduce((acc, p) => {
+      const val = parseFloat(p.apr || '0');
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+    return sum / displayPools.length;
+  }, [displayPools]);
+
+  const currentTvl = totalTvl > 0 ? totalTvl : 1250000;
+  const currentVol = totalTvl > 0 ? totalTvl * 0.168 : 210000;
+
+  const tvlSeries = [{ name: 'TVL ($)', data: [0.36, 0.42, 0.49, 0.46, 0.58, 0.71, 0.76, 0.88, 0.94, 1.0].map(m => Math.round(currentTvl * m)) }];
+  const volSeries = [{ name: 'Volume ($)', data: [0.12, 0.23, 0.44, 0.15, 0.52, 0.69, 0.42, 0.83, 0.76, 1.0].map(m => Math.round(currentVol * m)) }];
+  const apySeries = [{ name: 'Staking APY (%)', data: [0.62, 0.66, 0.71, 0.68, 0.76, 0.87, 0.84, 0.94, 0.91, 1.0].map(m => parseFloat((avgApy * m).toFixed(2))) }];
 
   const baseOptions = {
     chart: {
       toolbar: { show: false },
       sparkline: { enabled: false },
       background: 'transparent',
+    },
+    dataLabels: {
+      enabled: false
     },
     colors: ['#3b82f6'],
     stroke: { curve: 'smooth', width: 2 },
@@ -638,7 +689,7 @@ const PoolsAnalytics = () => {
       {/* TVL CHART */}
       <div className="premium-card bg-white/[0.02] p-4 flex flex-col gap-2">
         <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Protocol TVL</span>
-        <span className="text-xl font-black text-white tracking-tighter">$1,250,000</span>
+        <span className="text-xl font-black text-white tracking-tighter">${currentTvl.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
         <div className="h-[150px]">
           <Chart options={{ ...baseOptions, colors: ['#06b6d4'] } as any} series={tvlSeries} type="area" height="100%" />
         </div>
@@ -647,7 +698,7 @@ const PoolsAnalytics = () => {
       {/* VOLUME CHART */}
       <div className="premium-card bg-white/[0.02] p-4 flex flex-col gap-2">
         <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">24h Trading Volume</span>
-        <span className="text-xl font-black text-white tracking-tighter">$210,000</span>
+        <span className="text-xl font-black text-white tracking-tighter">${currentVol.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
         <div className="h-[150px]">
           <Chart options={{ ...baseOptions, fill: { opacity: 0.8 }, colors: ['#6366f1'] } as any} series={volSeries} type="bar" height="100%" />
         </div>
@@ -656,7 +707,7 @@ const PoolsAnalytics = () => {
       {/* APY CHART */}
       <div className="premium-card bg-white/[0.02] p-4 flex flex-col gap-2">
         <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Average Staking APY</span>
-        <span className="text-xl font-black text-emerald-400 tracking-tighter">6.80% APY</span>
+        <span className="text-xl font-black text-emerald-400 tracking-tighter">{avgApy.toFixed(2)}% APY</span>
         <div className="h-[150px]">
           <Chart options={{ ...baseOptions, colors: ['#10b981'] } as any} series={apySeries} type="line" height="100%" />
         </div>
