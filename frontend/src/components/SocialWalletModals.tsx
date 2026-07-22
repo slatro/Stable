@@ -6,8 +6,8 @@ export const SocialWalletModals = () => {
   const [isTxOpen, setIsTxOpen] = useState(false);
   
   // Login states
-  const [loginStep, setLoginStep] = useState<'select' | 'connecting' | 'generating'>('select');
-  const [loginType, setLoginType] = useState<'google' | 'twitter' | null>(null);
+  const [loginStep, setLoginStep] = useState<'select' | 'auth_window' | 'connecting' | 'generating'>('select');
+  const [loginType, setLoginType] = useState<'google' | null>(null);
   
   // Tx states
   const [txDetails, setTxDetails] = useState<any>(null);
@@ -38,30 +38,42 @@ export const SocialWalletModals = () => {
   }, []);
 
   // SOCIAL LOGIN FLOW
-  const startSocialLogin = (type: 'google' | 'twitter') => {
+  const startSocialLogin = (type: 'google') => {
     setLoginType(type);
-    setLoginStep('connecting');
+    setLoginStep('auth_window');
     
-    // Step 1: Connecting Circle SDK
-    setTimeout(() => {
-      setLoginStep('generating');
-      
-      // Step 2: Generating smart account address
-      setTimeout(() => {
-        // Generate a random-looking but valid address format
-        const randHex = Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-        const smartAddress = `0x${randHex}`;
+    // Open realistic Google Auth popup
+    const popup = window.open('https://accounts.google.com/signin/v2/identifier', 'Google Login', 'width=500,height=600,left=200,top=100');
+    
+    // Poll to check when user closes the popup
+    const checkPopup = setInterval(() => {
+      if (!popup || popup.closed || popup.closed === undefined) {
+        clearInterval(checkPopup);
         
-        localStorage.setItem('stablr_social_provider', type);
+        setLoginStep('connecting');
         
-        // Dispatch success event back to the connector
-        window.dispatchEvent(new CustomEvent('stablr-social-login-success', {
-          detail: { address: smartAddress }
-        }));
-        
-        setIsLoginOpen(false);
-      }, 1500);
-    }, 1500);
+        // Step 1: Connecting Circle SDK
+        setTimeout(() => {
+          setLoginStep('generating');
+          
+          // Step 2: Generating smart account address
+          setTimeout(() => {
+            // Generate a random-looking but valid address format
+            const randHex = Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+            const smartAddress = `0x${randHex}`;
+            
+            localStorage.setItem('stablr_social_provider', type);
+            
+            // Dispatch success event back to the connector
+            window.dispatchEvent(new CustomEvent('stablr-social-login-success', {
+              detail: { address: smartAddress }
+            }));
+            
+            setIsLoginOpen(false);
+          }, 1500);
+        }, 1500);
+      }
+    }, 500);
   };
 
   const cancelSocialLogin = () => {
@@ -134,18 +146,21 @@ export const SocialWalletModals = () => {
                   <Chrome size={16} className="text-white" />
                   Sign in with Google
                 </button>
-                <button
-                  onClick={() => startSocialLogin('twitter')}
-                  className="flex items-center justify-center gap-3 w-full py-4 bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:scale-[1.02] text-white"
-                >
-                  <Twitter size={16} className="text-blue-400" fill="currentColor" />
-                  Sign in with Twitter
-                </button>
               </div>
 
               <button onClick={cancelSocialLogin} className="text-[10px] font-black text-white/20 hover:text-white/40 uppercase tracking-widest transition-colors mt-2">
                 Cancel
               </button>
+            </div>
+          )}
+
+          {loginStep === 'auth_window' && (
+            <div className="flex flex-col items-center justify-center py-12 gap-6">
+              <Loader2 className="text-white animate-spin" size={48} />
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-black text-white uppercase tracking-widest">Waiting for Google...</span>
+                <p className="text-[9px] font-bold text-white/20 uppercase tracking-wider">Please complete authentication in the popup window.</p>
+              </div>
             </div>
           )}
 

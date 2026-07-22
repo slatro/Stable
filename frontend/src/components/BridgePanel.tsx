@@ -74,7 +74,7 @@ const CHAINS = [
     chainId: 84532,
     domain: 6,
     usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-    logo: 'https://raw.githubusercontent.com/base-org/brand-kit/001c0e9b40a67799ebe0418671ac4e02a0c683ce/logo/symbol/Base_Symbol_White.svg',
+    logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGN9M22J699TqO4l1VBJJtzE3bJx_e4xihJjwJ1Aj8qN72LhBWfjRai4ZN&s=10',
     bg: '#0052FF',
     containerClass: 'w-7 h-7 rounded-md border border-white/50',
     imgClass: 'w-[14px] h-[14px]',
