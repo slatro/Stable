@@ -7,12 +7,12 @@ interface LogoProps {
 }
 
 export const Logo = ({ size, hideText = false, showSubtitle = false }: LogoProps) => (
-  <div className="flex items-center gap-2.5 md:gap-3 group cursor-pointer shrink-0">
+  <div className="flex items-center gap-3.5 group cursor-pointer shrink-0">
     <div 
       className="relative flex items-center justify-center shrink-0"
       style={{ 
-        width: size ? `${size * 3}px` : '42px', 
-        height: size ? `${size * 3}px` : '42px'
+        width: size ? `${size * 4}px` : '56px', 
+        height: size ? `${size * 4}px` : '56px'
       }}
     >
       <img 
@@ -23,7 +23,7 @@ export const Logo = ({ size, hideText = false, showSubtitle = false }: LogoProps
     </div>
 
     {!hideText && (
-      <div className="flex flex-col justify-center whitespace-nowrap select-none">
+      <div className="flex flex-col items-center justify-center whitespace-nowrap select-none pt-0.5">
         <span 
           className="text-lg md:text-xl font-black tracking-[0.25em] uppercase font-sans leading-none"
           style={{
@@ -36,13 +36,14 @@ export const Logo = ({ size, hideText = false, showSubtitle = false }: LogoProps
           STABLR
         </span>
         {showSubtitle && (
-          <div className="flex flex-col w-full mt-1">
+          <div className="flex flex-col items-center w-full mt-1.5">
             <span 
-              className="text-[7.5px] md:text-[8px] font-black text-blue-400 tracking-[0.25em] uppercase leading-none"
+              className="text-[7.5px] md:text-[8px] font-black text-blue-400 tracking-[0.25em] uppercase leading-none pb-0.5"
               style={{ textShadow: '0 0 6px rgba(96, 165, 250, 0.4)' }}
             >
               Live on Arc
             </span>
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-blue-400/40 to-transparent" />
           </div>
         )}
       </div>
