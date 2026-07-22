@@ -14,12 +14,6 @@ const arcTestnet = {
   blockExplorers: {
     default: { name: 'ArcScan', url: ARC_TESTNET_CONFIG.blockExplorerUrl },
   },
-  contracts: {
-    multicall3: {
-      address: '0xcA11bde05977b3631167028862bE2a173976CA11',
-      blockCreated: 1,
-    },
-  },
 } as const;
 
 export const config = createConfig({

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Copy, LogOut, CheckCircle2, Wallet, ExternalLink, Zap, Edit2, Award, Star, Shield, Trophy, Camera } from 'lucide-react';
-import { useAccount, useDisconnect, useReadContract, useReadContracts, useBalance } from 'wagmi';
+import { useAccount, useDisconnect, useReadContract, useBalance } from 'wagmi';
 import { formatUnits } from 'viem';
 import { CONTRACT_ADDRESSES } from '../config/contracts';
 import ERC20_ABI from '../abis/ERC20.json';
@@ -43,28 +43,28 @@ export const ProfileModal = ({ isOpen, onClose, selectedAvatar, setSelectedAvata
     localStorage.setItem('arc_profile_name', userName);
   }, [userName]);
 
-  const ARC_CHAIN_ID = 5042002;
+  const { data: rawBalNativeUSDC } = useReadContract({ address: CONTRACT_ADDRESSES.USDC_NATIVE as `0x${string}`, abi: ERC20_ABI, functionName: 'balanceOf', args: address ? [address] : undefined });
+  const { data: decNativeUSDC } = useReadContract({ address: CONTRACT_ADDRESSES.USDC_NATIVE as `0x${string}`, abi: ERC20_ABI, functionName: 'decimals' });
+  
+  const { data: rawBalNativeEURC } = useReadContract({ address: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, abi: ERC20_ABI, functionName: 'balanceOf', args: address ? [address] : undefined });
+  const { data: decNativeEURC } = useReadContract({ address: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, abi: ERC20_ABI, functionName: 'decimals' });
 
-  const commonQuery = { enabled: !!address, refetchInterval: 5000 };
-
-  const { data: usdcNativeBal } = useBalance({ address, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: eurcNativeBal } = useBalance({ address, token: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: balAUSDC } = useBalance({ address, token: CONTRACT_ADDRESSES.aUSDC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: balAEURC } = useBalance({ address, token: CONTRACT_ADDRESSES.aEURC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: balATRYC } = useBalance({ address, token: CONTRACT_ADDRESSES.aTRYC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: balAGBPC } = useBalance({ address, token: CONTRACT_ADDRESSES.aGBPC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: balAJPYC } = useBalance({ address, token: CONTRACT_ADDRESSES.aJPYC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
+  const { data: balAUSDC } = useBalance({ address: address, token: CONTRACT_ADDRESSES.aUSDC as `0x${string}` });
+  const { data: balAEURC } = useBalance({ address: address, token: CONTRACT_ADDRESSES.aEURC as `0x${string}` });
+  const { data: balATRYC } = useBalance({ address: address, token: CONTRACT_ADDRESSES.aTRYC as `0x${string}` });
+  const { data: balAGBPC } = useBalance({ address: address, token: CONTRACT_ADDRESSES.aGBPC as `0x${string}` });
+  const { data: balAJPYC } = useBalance({ address: address, token: CONTRACT_ADDRESSES.aJPYC as `0x${string}` });
 
   if (!isOpen) return null;
 
   const balances = [
-    { symbol: 'USDC', name: 'Native Gas', amount: usdcNativeBal?.value, dec: usdcNativeBal?.decimals || 18, icon: TOKEN_ICONS.aUSDC },
-    { symbol: 'EURC', name: 'Native Euro', amount: eurcNativeBal?.value, dec: eurcNativeBal?.decimals || 6, icon: TOKEN_ICONS.aEURC },
-    { symbol: 'aUSDC', name: 'Stablr Dollar', amount: balAUSDC?.value, dec: balAUSDC?.decimals || 18, icon: TOKEN_ICONS.aUSDC },
-    { symbol: 'aEURC', name: 'Stablr Euro', amount: balAEURC?.value, dec: balAEURC?.decimals || 18, icon: TOKEN_ICONS.aEURC },
-    { symbol: 'aTRYC', name: 'Stablr Lira', amount: balATRYC?.value, dec: balATRYC?.decimals || 18, icon: TOKEN_ICONS.aTRYC },
-    { symbol: 'aGBPC', name: 'Stablr Pound', amount: balAGBPC?.value, dec: balAGBPC?.decimals || 18, icon: TOKEN_ICONS.aGBPC },
-    { symbol: 'aJPYC', name: 'Stablr Yen', amount: balAJPYC?.value, dec: balAJPYC?.decimals || 18, icon: TOKEN_ICONS.aJPYC },
+    { symbol: 'USDC', name: 'Native Gas', amount: rawBalNativeUSDC, dec: (decNativeUSDC as number) || 18, icon: TOKEN_ICONS.aUSDC },
+    { symbol: 'EURC', name: 'Native Euro', amount: rawBalNativeEURC, dec: 6, icon: TOKEN_ICONS.aEURC },
+    { symbol: 'aUSDC', name: 'Arc Dollar', amount: balAUSDC?.value, dec: 6, icon: TOKEN_ICONS.aUSDC },
+    { symbol: 'aEURC', name: 'Arc Euro', amount: balAEURC?.value, dec: 18, icon: TOKEN_ICONS.aEURC },
+    { symbol: 'aTRYC', name: 'Arc Lira', amount: balATRYC?.value, dec: 18, icon: TOKEN_ICONS.aTRYC },
+    { symbol: 'aGBPC', name: 'Arc Pound', amount: balAGBPC?.value, dec: 18, icon: TOKEN_ICONS.aGBPC },
+    { symbol: 'aJPYC', name: 'Arc Yen', amount: balAJPYC?.value, dec: 18, icon: TOKEN_ICONS.aJPYC },
   ];
 
   return (
