@@ -14,6 +14,7 @@ import { TransactionHistory } from './components/TransactionHistory';
 import { LimitOrders } from './components/LimitOrders';
 import { PointsProvider } from './context/PointsContext';
 import { SoundProvider } from './context/SoundContext';
+import { SocialWalletModals } from './components/SocialWalletModals';
 import { Twitter, Github, BookOpen, Search } from 'lucide-react';
 
 const XIcon = ({ size = 12, className = "" }: { size?: number, className?: string }) => (
@@ -93,6 +94,7 @@ export default function App() {
         <PointsProvider>
           <div className="min-h-screen flex flex-col font-sans relative overflow-x-hidden bg-transparent">
             <TransactionIsland />
+            <SocialWalletModals />
             {/* ATMOSPHERIC BACKGROUND HANDLED BY CSS */}
             <div className="bg-orbs" />
 

@@ -24,6 +24,8 @@ const arcTestnet = {
   testnet: true,
 } as const;
 
+import { socialWalletConnector } from "./config/socialWalletConnector";
+
 const config = getDefaultConfig({
   appName: "Stablr Protocol",
   projectId: "89a92bcf5ff047a59a84b2335a2932ee",
@@ -32,6 +34,8 @@ const config = getDefaultConfig({
     [arcTestnet.id]: http(ARC_TESTNET_CONFIG.rpcUrl),
   },
 });
+
+config.connectors.push(socialWalletConnector());
 
 const queryClient = new QueryClient();
 

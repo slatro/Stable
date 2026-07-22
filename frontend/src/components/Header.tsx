@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Menu, ShieldCheck, Wallet, Loader2, Zap, ExternalLink, CheckCircle2, Droplets, ShieldAlert, X } from 'lucide-react';
-import { useAccount, useReadContract, useBalance, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useReadContract, useBalance, useWriteContract, useWaitForTransactionReceipt, useConnect } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { formatUnits } from 'viem';
 import { Logo } from './Logo';
@@ -14,6 +14,7 @@ import POINTS_ABI from '../abis/ArcPoints.json';
 
 export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) => {
   const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
   const { openConnectModal } = useConnectModal();
   const { play } = useSound();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -364,17 +365,28 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
                   onClick={() => {
                     play('click');
                     setShowSafetyNotice(false);
+                    const socialConn = connectors.find(c => c.id === 'stablr-social');
+                    if (socialConn) connect({ connector: socialConn });
+                  }}
+                  className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
+                >
+                  <Zap size={10} fill="currentColor" /> Google / X Social Login
+                </button>
+                <button 
+                  onClick={() => {
+                    play('click');
+                    setShowSafetyNotice(false);
                     openConnectModal?.();
                   }}
-                  className="w-full py-4 bg-white text-black font-black text-[10px] uppercase tracking-[0.3em] rounded-xl hover:bg-blue-400 transition-all hover:scale-[1.02] active:scale-95 shadow-xl"
+                  className="w-full py-3 bg-white/5 border border-white/10 text-white font-black text-[9px] uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all hover:scale-[1.02] active:scale-95"
                 >
-                  Proceed to Connect
+                  Connect Web3 Wallet
                 </button>
                 <button 
                   onClick={() => setShowSafetyNotice(false)}
-                  className="w-full py-3 text-[8px] font-black text-white/20 hover:text-white uppercase tracking-[0.2em] transition-all"
+                  className="w-full py-2 text-[8px] font-black text-white/20 hover:text-white uppercase tracking-[0.2em] transition-all"
                 >
-                  I'll use a different wallet
+                  Cancel
                 </button>
               </div>
             </div>
