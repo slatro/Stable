@@ -153,31 +153,36 @@ const AssetRow = ({ asset, balance, price, change24h, onAction }: any) => {
 };
 
 
-const useTotalWalletValue = (balances: any, livePrices: any, nativeBalances: any) => {
+const useTotalWalletValue = (balancesMap: any, livePrices: any, nativeBalances: any) => {
   return useMemo(() => {
-    if (!livePrices || !balances || !Array.isArray(balances)) return 0;
+    if (!livePrices || !balancesMap) return 0;
+    
     let total = 0;
-    try {
-      if (nativeBalances?.usdc?.value && livePrices['USDC']) {
-        const bal = parseFloat(formatUnits(BigInt(nativeBalances.usdc.value.toString()), nativeBalances.usdc.decimals || 18));
-        total += bal * livePrices['USDC'].price;
-      }
-      if (nativeBalances?.eurc !== undefined && livePrices['EURC']) {
-        const bal = parseFloat(formatUnits(BigInt(nativeBalances.eurc.toString()), 6));
-        total += bal * livePrices['EURC'].price;
-      }
-      balances.slice(2).forEach((res: any, i: number) => {
-        if (res?.status === 'success' && res?.result !== undefined && res?.result !== null) {
-          const token = TOKENS[i + 2];
-          if (!token) return;
-          const bal = parseFloat(formatUnits(BigInt(res.result.toString()), token.decimals || 18));
-          const price = livePrices[token.symbol]?.price || 0;
-          total += bal * price;
+    
+    // 1. Native Balances
+    if (nativeBalances.usdc) {
+      total += parseFloat(formatUnits(nativeBalances.usdc.value, 18)) * (livePrices['USDC']?.price || 1);
+    }
+    if (nativeBalances.eurc) {
+      total += parseFloat(formatUnits(nativeBalances.eurc.value, 6)) * (livePrices['EURC']?.price || 1);
+    }
+
+    // 2. Synthetic Balances
+    if (balancesMap) {
+      Object.keys(balancesMap).forEach((symbol) => {
+        const balObj = balancesMap[symbol];
+        if (balObj && balObj.value !== undefined && balObj.value > 0n) {
+          const tokenDef = TOKENS.find(t => t.symbol === symbol);
+          if (tokenDef) {
+             const valNum = parseFloat(formatUnits(balObj.value, tokenDef.decimals));
+             total += valNum * (livePrices[symbol]?.price || 1);
+          }
         }
       });
-    } catch (e) { console.error("Wallet value error:", e); }
+    }
+
     return total;
-  }, [balances, livePrices, nativeBalances]);
+  }, [balancesMap, livePrices, nativeBalances]);
 };
 
 export const Dashboard = ({ onTradeAction }: { onTradeAction: (asset: any) => void }) => {
@@ -197,42 +202,23 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
   const priceContext = usePrices();
   const prices = priceContext?.prices || {};
 
-  const balanceContracts = useMemo(() => {
-    return TOKENS.map(t => {
-      // Native tokens are fetched via separate hooks (usdcNativeBal, eurcNativeBal).
-      // We return a dummy safe call for them to keep the array length and indexing aligned.
-      if (t.symbol === 'USDC' || t.symbol === 'EURC') {
-        return {
-          address: CONTRACT_ADDRESSES.aUSDC as `0x${string}`,
-          abi: ERC20_ABI as any,
-          functionName: 'decimals',
-          chainId: 5042002
-        };
-      }
-      return {
-        address: t.addr as `0x${string}`,
-        abi: ERC20_ABI as any,
-        functionName: 'balanceOf',
-        args: address ? [address] : undefined,
-        chainId: 5042002
-      };
-    });
-  }, [address]);
-
-  const { data: balances } = useReadContracts({
-    contracts: balanceContracts as any,
-    query: { enabled: !!address, refetchInterval: 5000 }
-  });
-
   const { data: usdcNativeBal } = useBalance({ address, chainId: 5042002, query: { enabled: !!address, refetchInterval: 5000 } });
-  const { data: eurcNativeBal } = useReadContract({
-    address: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`,
-    abi: ERC20_ABI.abi || ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    chainId: 5042002,
-    query: { enabled: !!address, refetchInterval: 5000 }
-  });
+  const { data: eurcNativeBal } = useBalance({ address, token: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, chainId: 5042002, query: { enabled: !!address, refetchInterval: 5000 } });
+  const { data: aUSDCBal } = useBalance({ address, token: CONTRACT_ADDRESSES.aUSDC as `0x${string}`, chainId: 5042002, query: { enabled: !!address, refetchInterval: 5000 } });
+  const { data: aEURCBal } = useBalance({ address, token: CONTRACT_ADDRESSES.aEURC as `0x${string}`, chainId: 5042002, query: { enabled: !!address, refetchInterval: 5000 } });
+  const { data: aTRYCBal } = useBalance({ address, token: CONTRACT_ADDRESSES.aTRYC as `0x${string}`, chainId: 5042002, query: { enabled: !!address, refetchInterval: 5000 } });
+  const { data: aGBPCBal } = useBalance({ address, token: CONTRACT_ADDRESSES.aGBPC as `0x${string}`, chainId: 5042002, query: { enabled: !!address, refetchInterval: 5000 } });
+  const { data: aJPYCBal } = useBalance({ address, token: CONTRACT_ADDRESSES.aJPYC as `0x${string}`, chainId: 5042002, query: { enabled: !!address, refetchInterval: 5000 } });
+  const { data: astUSDCBal } = useBalance({ address, token: CONTRACT_ADDRESSES.astUSDC as `0x${string}`, chainId: 5042002, query: { enabled: !!address, refetchInterval: 5000 } });
+
+  const balancesMap = useMemo(() => ({
+    'aUSDC': aUSDCBal,
+    'aEURC': aEURCBal,
+    'aTRYC': aTRYCBal,
+    'aGBPC': aGBPCBal,
+    'aJPYC': aJPYCBal,
+    'astUSDC': astUSDCBal
+  }), [aUSDCBal, aEURCBal, aTRYCBal, aGBPCBal, aJPYCBal, astUSDCBal]);
 
   // --- ROBUST POOL DISCOVERY ---
   const { data: routerFactory } = useReadContract({
@@ -334,7 +320,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
     return pos;
   }, [poolMetadatas, poolAddresses, prices]);
 
-  const walletValue = useTotalWalletValue(balances, prices, { usdc: usdcNativeBal, eurc: eurcNativeBal });
+  const walletValue = useTotalWalletValue(balancesMap, prices, { usdc: usdcNativeBal, eurc: eurcNativeBal });
   const lpValue = poolDetails.reduce((acc, p) => acc + p.usdValue, 0);
   const totalPortfolioValue = lpValue + walletValue;
 
@@ -417,7 +403,7 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
 
   const astUSDC_Token = TOKENS.find(t => t.symbol === 'astUSDC');
   const astUSDC_Idx = TOKENS.findIndex(t => t.symbol === 'astUSDC');
-  const astUSDC_BalRaw = (balances?.[astUSDC_Idx]?.status === 'success' && balances?.[astUSDC_Idx]?.result !== undefined) ? BigInt(balances?.[astUSDC_Idx]?.result.toString()) : 0n;
+  const astUSDC_BalRaw = balancesMap['astUSDC']?.value !== undefined ? balancesMap['astUSDC'].value : 0n;
   const astUSDC_Bal = parseFloat(formatUnits(astUSDC_BalRaw, 6));
   const stakedValueUsd = astUSDC_Bal * (parseFloat(formatUnits(exchangeRate, 6))) * (prices['USDC']?.price || 1);
 
@@ -509,22 +495,23 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
       if (val > 0) arr.push({ symbol: 'USDC', amount: val.toLocaleString(undefined, { maximumFractionDigits: 2 }), value: val * (prices['USDC']?.price || 1), color: colors[0] });
     }
     if (eurcNativeBal !== undefined) {
-      const val = parseFloat(formatUnits(BigInt(eurcNativeBal.toString()), 6));
+      const val = parseFloat(formatUnits(eurcNativeBal.value, 6));
       if (val > 0) arr.push({ symbol: 'EURC', amount: val.toLocaleString(undefined, { maximumFractionDigits: 2 }), value: val * (prices['EURC']?.price || 1), color: colors[1] });
     }
-    if (balances) {
-      balances.forEach((res: any, i: number) => {
-        if (res.status === 'success' && res.result > 0n) {
-          const t = TOKENS[i];
-          // Skip USDC/EURC as they are handled natively above
-          if (t.symbol === 'USDC' || t.symbol === 'EURC') return;
-          const val = parseFloat(formatUnits(res.result, t.decimals || 18));
-          arr.push({ symbol: t.symbol, amount: val.toLocaleString(undefined, { maximumFractionDigits: 2 }), value: val * (prices[t.symbol]?.price || 0), color: colors[(i + 2) % colors.length] });
+    if (balancesMap) {
+      Object.keys(balancesMap).forEach((symbol, i) => {
+        const balObj = balancesMap[symbol];
+        if (balObj && balObj.value !== undefined && balObj.value > 0n) {
+          const t = TOKENS.find(tk => tk.symbol === symbol);
+          if (t && symbol !== 'USDC' && symbol !== 'EURC') {
+            const val = parseFloat(formatUnits(balObj.value, t.decimals || 18));
+            arr.push({ symbol: t.symbol, amount: val.toLocaleString(undefined, { maximumFractionDigits: 2 }), value: val * (prices[t.symbol]?.price || 0), color: colors[(i + 2) % colors.length] });
+          }
         }
       });
     }
     return arr;
-  }, [usdcNativeBal, eurcNativeBal, balances, prices]);
+  }, [usdcNativeBal, eurcNativeBal, balancesMap, prices]);
 
   const [refCopied, setRefCopied] = React.useState(false);
   const copyRefLink = () => {
@@ -579,10 +566,10 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
                     const priceData = prices[token.symbol] || { price: 1, change24h: '+0.00%' };
                     let formattedBal = '0.00';
                     if (token.symbol === 'USDC' && usdcNativeBal) formattedBal = parseFloat(formatUnits(usdcNativeBal.value, 18)).toFixed(4);
-                    else if (token.symbol === 'EURC' && eurcNativeBal !== undefined) formattedBal = parseFloat(formatUnits(BigInt(eurcNativeBal.toString()), 6)).toFixed(4);
+                    else if (token.symbol === 'EURC' && eurcNativeBal) formattedBal = parseFloat(formatUnits(eurcNativeBal.value, 6)).toFixed(4);
                     else {
-                      const balRes = balances?.[i];
-                      const rawBal = (balRes?.status === 'success' && balRes.result !== undefined) ? BigInt(balRes.result.toString()) : 0n;
+                      const balRes = (balancesMap as any)[token.symbol];
+                      const rawBal = balRes?.value !== undefined ? balRes.value : 0n;
                       formattedBal = parseFloat(formatUnits(rawBal, token.decimals)).toFixed(4);
                     }
                     return <AssetRow key={token.symbol} asset={token} balance={formattedBal} price={priceData.price} change24h={priceData.change24h} onAction={onTradeAction} />;

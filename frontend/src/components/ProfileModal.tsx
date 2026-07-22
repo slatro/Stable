@@ -48,36 +48,23 @@ export const ProfileModal = ({ isOpen, onClose, selectedAvatar, setSelectedAvata
   const commonQuery = { enabled: !!address, refetchInterval: 5000 };
 
   const { data: usdcNativeBal } = useBalance({ address, chainId: ARC_CHAIN_ID, query: commonQuery });
-  
-  const { data: multicallData } = useReadContracts({
-    contracts: [
-      { address: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aUSDC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aEURC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aTRYC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aGBPC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aJPYC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-    ],
-    query: commonQuery
-  });
-
-  const rawBalNativeEURC = multicallData?.[0]?.status === 'success' ? multicallData[0].result : undefined;
-  const balAUSDC = multicallData?.[1]?.status === 'success' ? multicallData[1].result : undefined;
-  const balAEURC = multicallData?.[2]?.status === 'success' ? multicallData[2].result : undefined;
-  const balATRYC = multicallData?.[3]?.status === 'success' ? multicallData[3].result : undefined;
-  const balAGBPC = multicallData?.[4]?.status === 'success' ? multicallData[4].result : undefined;
-  const balAJPYC = multicallData?.[5]?.status === 'success' ? multicallData[5].result : undefined;
+  const { data: eurcNativeBal } = useBalance({ address, token: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
+  const { data: balAUSDC } = useBalance({ address, token: CONTRACT_ADDRESSES.aUSDC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
+  const { data: balAEURC } = useBalance({ address, token: CONTRACT_ADDRESSES.aEURC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
+  const { data: balATRYC } = useBalance({ address, token: CONTRACT_ADDRESSES.aTRYC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
+  const { data: balAGBPC } = useBalance({ address, token: CONTRACT_ADDRESSES.aGBPC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
+  const { data: balAJPYC } = useBalance({ address, token: CONTRACT_ADDRESSES.aJPYC as `0x${string}`, chainId: ARC_CHAIN_ID, query: commonQuery });
 
   if (!isOpen) return null;
 
   const balances = [
     { symbol: 'USDC', name: 'Native Gas', amount: usdcNativeBal?.value, dec: usdcNativeBal?.decimals || 18, icon: TOKEN_ICONS.aUSDC },
-    { symbol: 'EURC', name: 'Native Euro', amount: rawBalNativeEURC, dec: 6, icon: TOKEN_ICONS.aEURC },
-    { symbol: 'aUSDC', name: 'Stablr Dollar', amount: balAUSDC, dec: 18, icon: TOKEN_ICONS.aUSDC },
-    { symbol: 'aEURC', name: 'Stablr Euro', amount: balAEURC, dec: 18, icon: TOKEN_ICONS.aEURC },
-    { symbol: 'aTRYC', name: 'Stablr Lira', amount: balATRYC, dec: 18, icon: TOKEN_ICONS.aTRYC },
-    { symbol: 'aGBPC', name: 'Stablr Pound', amount: balAGBPC, dec: 18, icon: TOKEN_ICONS.aGBPC },
-    { symbol: 'aJPYC', name: 'Stablr Yen', amount: balAJPYC, dec: 18, icon: TOKEN_ICONS.aJPYC },
+    { symbol: 'EURC', name: 'Native Euro', amount: eurcNativeBal?.value, dec: eurcNativeBal?.decimals || 6, icon: TOKEN_ICONS.aEURC },
+    { symbol: 'aUSDC', name: 'Stablr Dollar', amount: balAUSDC?.value, dec: balAUSDC?.decimals || 18, icon: TOKEN_ICONS.aUSDC },
+    { symbol: 'aEURC', name: 'Stablr Euro', amount: balAEURC?.value, dec: balAEURC?.decimals || 18, icon: TOKEN_ICONS.aEURC },
+    { symbol: 'aTRYC', name: 'Stablr Lira', amount: balATRYC?.value, dec: balATRYC?.decimals || 18, icon: TOKEN_ICONS.aTRYC },
+    { symbol: 'aGBPC', name: 'Stablr Pound', amount: balAGBPC?.value, dec: balAGBPC?.decimals || 18, icon: TOKEN_ICONS.aGBPC },
+    { symbol: 'aJPYC', name: 'Stablr Yen', amount: balAJPYC?.value, dec: balAJPYC?.decimals || 18, icon: TOKEN_ICONS.aJPYC },
   ];
 
   return (
