@@ -7,7 +7,7 @@ interface LogoProps {
 }
 
 export const Logo = ({ size, hideText = false, showSubtitle = false }: LogoProps) => (
-  <div className="flex items-center gap-3.5 group cursor-pointer shrink-0 h-[56px] overflow-visible">
+  <div className="flex items-center gap-2 group cursor-pointer shrink-0 h-[56px] overflow-visible">
     <div 
       className="relative flex items-center justify-center shrink-0 overflow-visible"
       style={{ 
