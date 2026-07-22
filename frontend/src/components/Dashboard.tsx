@@ -202,7 +202,8 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
       address: t.addr as `0x${string}`,
       abi: ERC20_ABI.abi || ERC20_ABI as any,
       functionName: 'balanceOf',
-      args: address ? [address] : undefined
+      args: address ? [address] : undefined,
+      chainId: (CONTRACT_ADDRESSES as any).ARC_CHAIN_ID || 5042002
     }));
   }, [address]);
 
@@ -211,12 +212,13 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
     query: { enabled: !!address, refetchInterval: 5000 }
   });
 
-  const { data: usdcNativeBal } = useBalance({ address, query: { enabled: !!address, refetchInterval: 5000 } });
+  const { data: usdcNativeBal } = useBalance({ address, chainId: 5042002, query: { enabled: !!address, refetchInterval: 5000 } });
   const { data: eurcNativeBal } = useReadContract({
     address: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`,
     abi: ERC20_ABI.abi || ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
+    chainId: 5042002,
     query: { enabled: !!address, refetchInterval: 5000 }
   });
 

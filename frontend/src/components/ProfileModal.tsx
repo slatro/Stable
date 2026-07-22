@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Copy, LogOut, CheckCircle2, Wallet, ExternalLink, Zap, Edit2, Award, Star, Shield, Trophy, Camera } from 'lucide-react';
-import { useAccount, useDisconnect, useReadContract, useBalance } from 'wagmi';
+import { useAccount, useDisconnect, useReadContract, useReadContracts, useBalance } from 'wagmi';
 import { formatUnits } from 'viem';
 import { CONTRACT_ADDRESSES } from '../config/contracts';
 import ERC20_ABI from '../abis/ERC20.json';
@@ -47,21 +47,31 @@ export const ProfileModal = ({ isOpen, onClose, selectedAvatar, setSelectedAvata
 
   const commonQuery = { enabled: !!address, refetchInterval: 5000 };
 
-  const { data: rawBalNativeUSDC } = useReadContract({ address: CONTRACT_ADDRESSES.USDC_NATIVE as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: decNativeUSDC } = useReadContract({ address: CONTRACT_ADDRESSES.USDC_NATIVE as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI, functionName: 'decimals', chainId: ARC_CHAIN_ID });
+  const { data: usdcNativeBal } = useBalance({ address, chainId: ARC_CHAIN_ID, query: commonQuery });
   
-  const { data: rawBalNativeEURC } = useReadContract({ address: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID, query: commonQuery });
-  
-  const { data: balAUSDC } = useReadContract({ address: CONTRACT_ADDRESSES.aUSDC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: balAEURC } = useReadContract({ address: CONTRACT_ADDRESSES.aEURC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: balATRYC } = useReadContract({ address: CONTRACT_ADDRESSES.aTRYC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: balAGBPC } = useReadContract({ address: CONTRACT_ADDRESSES.aGBPC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID, query: commonQuery });
-  const { data: balAJPYC } = useReadContract({ address: CONTRACT_ADDRESSES.aJPYC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID, query: commonQuery });
+  const { data: multicallData } = useReadContracts({
+    contracts: [
+      { address: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aUSDC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aEURC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aTRYC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aGBPC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aJPYC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+    ],
+    query: commonQuery
+  });
+
+  const rawBalNativeEURC = multicallData?.[0]?.status === 'success' ? multicallData[0].result : undefined;
+  const balAUSDC = multicallData?.[1]?.status === 'success' ? multicallData[1].result : undefined;
+  const balAEURC = multicallData?.[2]?.status === 'success' ? multicallData[2].result : undefined;
+  const balATRYC = multicallData?.[3]?.status === 'success' ? multicallData[3].result : undefined;
+  const balAGBPC = multicallData?.[4]?.status === 'success' ? multicallData[4].result : undefined;
+  const balAJPYC = multicallData?.[5]?.status === 'success' ? multicallData[5].result : undefined;
 
   if (!isOpen) return null;
 
   const balances = [
-    { symbol: 'USDC', name: 'Native Gas', amount: rawBalNativeUSDC, dec: (decNativeUSDC as number) || 18, icon: TOKEN_ICONS.aUSDC },
+    { symbol: 'USDC', name: 'Native Gas', amount: usdcNativeBal?.value, dec: usdcNativeBal?.decimals || 18, icon: TOKEN_ICONS.aUSDC },
     { symbol: 'EURC', name: 'Native Euro', amount: rawBalNativeEURC, dec: 6, icon: TOKEN_ICONS.aEURC },
     { symbol: 'aUSDC', name: 'Stablr Dollar', amount: balAUSDC, dec: 18, icon: TOKEN_ICONS.aUSDC },
     { symbol: 'aEURC', name: 'Stablr Euro', amount: balAEURC, dec: 18, icon: TOKEN_ICONS.aEURC },
