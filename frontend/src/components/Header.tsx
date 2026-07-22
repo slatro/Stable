@@ -362,21 +362,11 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
                   onClick={() => {
                     play('click');
                     setShowSafetyNotice(false);
-                    window.dispatchEvent(new CustomEvent('stablr-open-social-login'));
+                    openConnectModal?.();
                   }}
                   className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
                 >
-                  <Zap size={10} fill="currentColor" /> Google / X Social Login
-                </button>
-                <button 
-                  onClick={() => {
-                    play('click');
-                    setShowSafetyNotice(false);
-                    openConnectModal?.();
-                  }}
-                  className="w-full py-3 bg-white/5 border border-white/10 text-white font-black text-[9px] uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all hover:scale-[1.02] active:scale-95"
-                >
-                  Connect Web3 Wallet
+                  <Wallet size={12} fill="currentColor" /> I Understand & Connect Wallet
                 </button>
                 <button 
                   onClick={() => setShowSafetyNotice(false)}
