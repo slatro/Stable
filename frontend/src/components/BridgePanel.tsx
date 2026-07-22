@@ -75,9 +75,9 @@ const CHAINS = [
     domain: 6,
     usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
     logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGN9M22J699TqO4l1VBJJtzE3bJx_e4xihJjwJ1Aj8qN72LhBWfjRai4ZN&s=10',
-    bg: '#0052FF',
-    containerClass: 'w-7 h-7 rounded-md border border-white/50',
-    imgClass: 'w-[14px] h-[14px]',
+    bg: 'transparent',
+    containerClass: 'w-7 h-7 rounded-md overflow-hidden border border-white/50',
+    imgClass: 'w-full h-full object-cover',
     explorer: 'https://sepolia.basescan.org/tx'
   },
   {
