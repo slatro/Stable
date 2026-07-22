@@ -204,14 +204,14 @@ const DashboardContent = ({ onTradeAction }: { onTradeAction: (asset: any) => vo
       if (t.symbol === 'USDC' || t.symbol === 'EURC') {
         return {
           address: CONTRACT_ADDRESSES.aUSDC as `0x${string}`,
-          abi: ERC20_ABI.abi || ERC20_ABI as any,
+          abi: ERC20_ABI as any,
           functionName: 'decimals',
           chainId: 5042002
         };
       }
       return {
         address: t.addr as `0x${string}`,
-        abi: ERC20_ABI.abi || ERC20_ABI as any,
+        abi: ERC20_ABI as any,
         functionName: 'balanceOf',
         args: address ? [address] : undefined,
         chainId: 5042002

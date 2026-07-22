@@ -51,12 +51,12 @@ export const ProfileModal = ({ isOpen, onClose, selectedAvatar, setSelectedAvata
   
   const { data: multicallData } = useReadContracts({
     contracts: [
-      { address: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aUSDC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aEURC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aTRYC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aGBPC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
-      { address: CONTRACT_ADDRESSES.aJPYC as `0x${string}`, abi: ERC20_ABI.abi || ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.EURC_NATIVE as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aUSDC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aEURC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aTRYC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aGBPC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
+      { address: CONTRACT_ADDRESSES.aJPYC as `0x${string}`, abi: ERC20_ABI as any, functionName: 'balanceOf', args: address ? [address] : undefined, chainId: ARC_CHAIN_ID },
     ],
     query: commonQuery
   });
