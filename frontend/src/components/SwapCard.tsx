@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowUpDown, Settings, ChevronDown, Wallet, Edit2, RefreshCw, Loader2, ArrowRight, Zap, TrendingUp, ShieldCheck, Droplets, AlertCircle } from 'lucide-react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useBalance, useGasPrice, useReadContracts, useSignMessage } from 'wagmi';
+import { useReadContract, useWaitForTransactionReceipt, useBalance, useGasPrice, useReadContracts, useSignMessage } from 'wagmi';
+import { useAccount, useWriteContract } from '../hooks/web3';
 import { formatUnits, parseUnits, maxUint256 } from 'viem';
 import { CONTRACT_ADDRESSES, TOKENS } from '../config/contracts';
 import AMM_ABI from '../abis/ArcFXAMM.json';

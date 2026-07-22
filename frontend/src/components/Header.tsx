@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Menu, ShieldCheck, Wallet, Loader2, Zap, ExternalLink, CheckCircle2, Droplets, ShieldAlert, X } from 'lucide-react';
-import { useAccount, useReadContract, useBalance, useWriteContract, useWaitForTransactionReceipt, useConnect } from 'wagmi';
+import { useReadContract, useBalance, useWaitForTransactionReceipt, useConnect } from 'wagmi';
+import { useAccount, useWriteContract } from '../hooks/web3';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { formatUnits } from 'viem';
 import { Logo } from './Logo';
@@ -365,8 +366,7 @@ export const Header = ({ activeTab, setActiveTab }: { activeTab: string, setActi
                   onClick={() => {
                     play('click');
                     setShowSafetyNotice(false);
-                    const socialConn = connectors.find(c => c.id === 'stablr-social');
-                    if (socialConn) connect({ connector: socialConn });
+                    window.dispatchEvent(new CustomEvent('stablr-open-social-login'));
                   }}
                   className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
                 >

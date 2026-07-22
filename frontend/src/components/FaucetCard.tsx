@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Droplets, Clock, Trophy, MousePointer2 } from 'lucide-react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useReadContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useWriteContract } from '../hooks/web3';
 import { CONTRACT_ADDRESSES, ARC_TESTNET_CONFIG } from '../config/contracts';
 import FAUCET_ABI from '../abis/ArcMultiFaucet.json';
 import POINTS_ABI from '../abis/ArcPoints.json';
